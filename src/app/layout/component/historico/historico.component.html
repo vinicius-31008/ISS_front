@@ -1,0 +1,72 @@
+<div class="historico-wrapper">
+    <div class="historico-card">
+        <div class="historico-header">
+            <h2>Histórico de Importações</h2>
+            <span class="historico-badge">
+                <i class="pi pi-check-circle"></i>
+                Ativo
+            </span>
+        </div>
+
+        <div class="historico-body">
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <span class="metric-label">Total de registros</span>
+                    <span class="metric-value">{{ paginacao.total_registros }}</span>
+                </div>
+                <div class="metric-box">
+                    <span class="metric-label">Página</span>
+                    <span class="metric-value">{{ paginacao.pagina }}</span>
+                </div>
+                <div class="metric-box">
+                    <span class="metric-label">Itens por página</span>
+                    <span class="metric-value">{{ paginacao.por_pagina }}</span>
+                </div>
+                <div class="metric-box">
+                    <span class="metric-label">ISS total</span>
+                    <span class="metric-value">{{ resumo.iss_total | currency:'BRL' }}</span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="historico-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Arquivo</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Linhas</th>
+                            <th>Processadas</th>
+                            <th>Erros</th>
+                            <th>ISS Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (item of importacoes; track item.id) {
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.arquivo }}</td>
+                                <td>{{ item.data_importacao }}</td>
+                                <td>
+                                    <span class="status-pill">{{ item.status }}</span>
+                                </td>
+                                <td>{{ item.total_linhas }}</td>
+                                <td>{{ item.total_processadas }}</td>
+                                <td>{{ item.total_erros }}</td>
+                                <td>{{ item.iss_total | currency:'BRL' }}</td>
+                            </tr>
+                        }
+                        @if (importacoes.length === 0) {
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    Nenhum registro encontrado.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
