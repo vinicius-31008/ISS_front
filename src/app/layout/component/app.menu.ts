@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { AuthService } from '../service/auth.service';
 
 @Component({
     selector: 'app-menu',
@@ -19,6 +20,8 @@ import { AppMenuitem } from './app.menuitem';
     </ul> `,
 })
 export class AppMenu {
+    private auth = inject(AuthService);
+
     model: MenuItem[] = [];
 
     ngOnInit() {
@@ -28,8 +31,19 @@ export class AppMenu {
                 items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
             },
             {
-                label: 'Histórico',
-                items: [{ label: 'Histórico', icon: 'pi pi-fw pi-history', routerLink: ['/historico'] }]
+                label: 'Notas Fiscais',
+                items: [
+                    { label: 'Importar', icon: 'pi pi-fw pi-upload', routerLink: ['/importacao'] },
+                    { label: 'Histórico', icon: 'pi pi-fw pi-history', routerLink: ['/historico'] }
+                ]
+            },
+            {
+                label: 'Administração',
+                visible: this.auth.admin(),
+                items: [
+                    { label: 'Empresas', icon: 'pi pi-fw pi-building', routerLink: ['/empresas'] },
+                    { label: 'Usuários', icon: 'pi pi-fw pi-users', routerLink: ['/usuarios'] }
+                ]
             },
             {
                 label: 'UI Components',

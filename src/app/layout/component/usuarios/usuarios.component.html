@@ -1,0 +1,208 @@
+<p-toast />
+<p-confirmdialog />
+
+<div class="usuarios-wrapper">
+    <div class="usuarios-card">
+        <div class="usuarios-header">
+            <h2>Usuários</h2>
+            <p-button label="Novo usuário" icon="pi pi-plus" (onClick)="novo()" />
+        </div>
+
+        <div class="usuarios-body">
+            <form class="filtros" (ngSubmit)="filtrar()">
+                <div class="filtro">
+                    <label for="filtro-busca">Busca</label>
+                    <input pInputText id="filtro-busca" name="busca" placeholder="Nome ou e-mail" [(ngModel)]="filtroBusca" />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-empresa">Empresa</label>
+                    <p-select
+                        inputId="filtro-empresa"
+                        name="empresa"
+                        [options]="empresas()"
+                        optionLabel="razao_social"
+                        optionValue="id"
+                        placeholder="Todas"
+                        [filter]="true"
+                        [showClear]="true"
+                        [(ngModel)]="filtroEmpresa"
+                    />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-perfil">Perfil</label>
+                    <p-select inputId="filtro-perfil" name="perfil" [options]="opcoesPerfil" optionLabel="label" optionValue="value" placeholder="Todos" [showClear]="true" [(ngModel)]="filtroPerfil" />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-ativo">Situação</label>
+                    <p-select inputId="filtro-ativo" name="ativo" [options]="opcoesAtivo" optionLabel="label" optionValue="value" placeholder="Todos" [showClear]="true" [(ngModel)]="filtroAtivo" />
+                </div>
+                <div class="filtro-acoes">
+                    <p-button type="submit" label="Filtrar" icon="pi pi-search" [loading]="carregando()" />
+                    <p-button type="button" label="Limpar" severity="secondary" [outlined]="true" (onClick)="limparFiltros()" />
+                </div>
+            </form>
+
+            @if (erro()) {
+                <div class="erro-box">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    {{ erro() }}
+                </div>
+            }
+
+            <div class="table-wrapper">
+                <table class="usuarios-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Empresa</th>
+                            <th>Perfil</th>
+                            <th>Situação</th>
+                            <th>Criado em</th>
+                            <th class="col-acoes">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (usuario of usuarios(); track usuario.id) {
+                            <tr [class.inativo]="!usuario.ativo">
+                                <td>
+                                    {{ usuario.nome }}
+                                    @if (usuario.id === idUsuarioLogado()) {
+                                        <span class="voce">(você)</span>
+                                    }
+                                </td>
+                                <td>{{ usuario.email }}</td>
+                                <td>
+                                    <span class="empresa-nome">{{ usuario.empresa.razao_social }}</span>
+                                    <span class="empresa-cnpj">{{ formatarCnpj(usuario.empresa.cnpj) }}</span>
+                                </td>
+                                <td>
+                                    <p-tag [value]="usuario.perfil === 'ADMIN' ? 'Administrador' : 'Usuário'" [severity]="usuario.perfil === 'ADMIN' ? 'info' : 'secondary'" />
+                                </td>
+                                <td>
+                                    <p-tag [value]="usuario.ativo ? 'Ativo' : 'Inativo'" [severity]="usuario.ativo ? 'success' : 'danger'" />
+                                </td>
+                                <td>{{ usuario.criado_em | date: 'dd/MM/yyyy' }}</td>
+                                <td class="col-acoes">
+                                    <p-button icon="pi pi-pencil" severity="secondary" [text]="true" [rounded]="true" pTooltip="Editar" ariaLabel="Editar" (onClick)="editar(usuario)" />
+                                    @if (usuario.ativo) {
+                                        <p-button
+                                            icon="pi pi-ban"
+                                            severity="danger"
+                                            [text]="true"
+                                            [rounded]="true"
+                                            [disabled]="usuario.id === idUsuarioLogado()"
+                                            [pTooltip]="usuario.id === idUsuarioLogado() ? 'Não é possível desativar o próprio usuário' : 'Desativar'"
+                                            ariaLabel="Desativar"
+                                            (onClick)="confirmarDesativar(usuario)"
+                                        />
+                                    } @else {
+                                        <p-button icon="pi pi-replay" severity="success" [text]="true" [rounded]="true" pTooltip="Reativar" ariaLabel="Reativar" (onClick)="reativar(usuario)" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (usuarios().length === 0) {
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    {{ carregando() ? 'Carregando...' : 'Nenhum usuário encontrado.' }}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (paginacao().total_registros > 0) {
+                <p-paginator
+                    [first]="(pagina() - 1) * porPagina()"
+                    [rows]="porPagina()"
+                    [totalRecords]="paginacao().total_registros"
+                    [rowsPerPageOptions]="[10, 20, 50, 100]"
+                    (onPageChange)="mudarPagina($event)"
+                />
+            }
+        </div>
+    </div>
+</div>
+
+<p-dialog
+    [header]="usuarioEditado() ? 'Editar usuário' : 'Novo usuário'"
+    [visible]="dialogoAberto()"
+    (visibleChange)="dialogoAberto.set($event)"
+    [modal]="true"
+    [style]="{ width: '32rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    <form class="form-usuario" (ngSubmit)="salvar()" id="form-usuario">
+        <div class="campo">
+            <label for="usuario-nome">Nome</label>
+            <input pInputText id="usuario-nome" name="nome" maxlength="150" [(ngModel)]="form.nome" autofocus />
+        </div>
+        <div class="campo">
+            <label for="usuario-email">E-mail</label>
+            <input pInputText id="usuario-email" name="email" type="email" maxlength="255" [(ngModel)]="form.email" />
+        </div>
+        <div class="campo">
+            <label for="usuario-empresa">Empresa</label>
+            <p-select
+                inputId="usuario-empresa"
+                name="empresa_id"
+                [options]="empresas()"
+                optionLabel="razao_social"
+                optionValue="id"
+                placeholder="Selecione"
+                [filter]="true"
+                appendTo="body"
+                [fluid]="true"
+                [(ngModel)]="form.empresa_id"
+            />
+        </div>
+        <div class="campo">
+            <label for="usuario-perfil">Perfil</label>
+            <p-select
+                inputId="usuario-perfil"
+                name="perfil"
+                [options]="opcoesPerfil"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                [fluid]="true"
+                [disabled]="usuarioEditado()?.id === idUsuarioLogado()"
+                [(ngModel)]="form.perfil"
+            />
+        </div>
+        <div class="campo">
+            <label for="usuario-senha">{{ usuarioEditado() ? 'Nova senha' : 'Senha' }}</label>
+            <p-password
+                inputId="usuario-senha"
+                name="senha"
+                [toggleMask]="true"
+                [feedback]="false"
+                [fluid]="true"
+                autocomplete="new-password"
+                [placeholder]="usuarioEditado() ? 'Deixe em branco para manter a atual' : 'Entre 8 e 72 caracteres'"
+                [(ngModel)]="form.senha"
+            />
+            @if (usuarioEditado() && form.senha) {
+                <small class="dica">Trocar a senha encerra as sessões abertas deste usuário.</small>
+            }
+        </div>
+        <div class="campo campo-linha">
+            <p-toggleswitch inputId="usuario-ativo" name="ativo" [disabled]="usuarioEditado()?.id === idUsuarioLogado()" [(ngModel)]="form.ativo" />
+            <label for="usuario-ativo">Ativo</label>
+        </div>
+
+        @if (erroFormulario()) {
+            <div class="erro-box">
+                <i class="pi pi-exclamation-triangle"></i>
+                {{ erroFormulario() }}
+            </div>
+        }
+    </form>
+
+    <ng-template #footer>
+        <p-button label="Cancelar" severity="secondary" [outlined]="true" (onClick)="dialogoAberto.set(false)" />
+        <p-button type="submit" form="form-usuario" label="Salvar" icon="pi pi-check" [loading]="salvando()" />
+    </ng-template>
+</p-dialog>

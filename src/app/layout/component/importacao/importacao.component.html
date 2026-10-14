@@ -1,0 +1,127 @@
+<div class="importacao-wrapper">
+    <div class="importacao-card">
+        <div class="importacao-header">
+            <h2>Importar Notas Fiscais</h2>
+            <a routerLink="/historico" class="link-historico">
+                <i class="pi pi-history"></i>
+                Ver histórico
+            </a>
+        </div>
+
+        <div class="importacao-body">
+            @if (!resultado()) {
+                <label
+                    class="dropzone"
+                    [class.arrastando]="arrastando()"
+                    [class.desabilitado]="enviando()"
+                    (dragover)="aoArrastar($event, true)"
+                    (dragleave)="aoArrastar($event, false)"
+                    (drop)="aoSoltar($event)"
+                >
+                    <input type="file" accept=".txt,text/plain" hidden [disabled]="enviando()" (change)="aoSelecionar($event)" />
+                    <i class="pi pi-cloud-upload dropzone-icone"></i>
+                    <span class="dropzone-titulo">Arraste o arquivo TXT aqui ou clique para selecionar</span>
+                    <span class="dropzone-dica">Uma nota fiscal por linha, 10 campos separados por ";"</span>
+                </label>
+
+                @if (arquivo(); as arq) {
+                    <div class="arquivo-selecionado">
+                        <i class="pi pi-file"></i>
+                        <div class="arquivo-info">
+                            <span class="arquivo-nome">{{ arq.name }}</span>
+                            <span class="arquivo-tamanho">{{ formatarTamanho(arq.size) }}</span>
+                        </div>
+                        <p-button icon="pi pi-times" severity="secondary" [text]="true" [rounded]="true" [disabled]="enviando()" ariaLabel="Remover arquivo" (onClick)="removerArquivo()" />
+                    </div>
+                }
+
+                @if (erro()) {
+                    <div class="aviso aviso-falha">
+                        <i class="pi pi-exclamation-triangle"></i>
+                        {{ erro() }}
+                    </div>
+                }
+
+                <div class="acoes">
+                    <p-button label="Importar" icon="pi pi-upload" [loading]="enviando()" [disabled]="!arquivo()" (onClick)="importar()" />
+                </div>
+
+                <details class="formato">
+                    <summary>Formato esperado do arquivo</summary>
+                    <p>Cada linha deve conter 10 campos, nesta ordem:</p>
+                    <code>numero;serie;data_emissao;cnpj_prestador;razao_social_prestador;documento_tomador;razao_social_tomador;codigo_lc116;municipio_ibge;valor_servico</code>
+                    <p>Exemplo:</p>
+                    <code>{{ exemploLinha }}</code>
+                    <ul>
+                        <li><strong>Obrigatórios:</strong> numero, data_emissao, cnpj_prestador, codigo_lc116, valor_servico.</li>
+                        <li><strong>data_emissao:</strong> YYYY-MM-DD ou YYYY-MM-DD HH:MM:SS.</li>
+                        <li><strong>valor_servico:</strong> até 2 casas decimais (ex.: 1000,50 ou 1.000,50).</li>
+                        <li><strong>documento_tomador:</strong> opcional; CPF (11) ou CNPJ (14 dígitos).</li>
+                        <li><strong>municipio_ibge:</strong> opcional; código IBGE de 7 dígitos.</li>
+                    </ul>
+                </details>
+            } @else {
+                @let res = resultado()!;
+
+                <div class="aviso" [ngClass]="'aviso-' + severidadeStatus(res.status)">
+                    <i class="pi" [ngClass]="res.total_erros === 0 ? 'pi-check-circle' : 'pi-exclamation-circle'"></i>
+                    <span>
+                        {{ mensagem() }} Importação <strong>#{{ res.importacao_id }}</strong> ({{ res.arquivo }})
+                    </span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Status</span>
+                        <span class="status-pill" [ngClass]="'status-' + severidadeStatus(res.status)">{{ res.status }}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Linhas</span>
+                        <span class="metric-value">{{ res.total_linhas }}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Processadas</span>
+                        <span class="metric-value">{{ res.total_processadas }}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Erros</span>
+                        <span class="metric-value">{{ res.total_erros }}</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">ISS total</span>
+                        <span class="metric-value">{{ res.iss_total | currency: 'BRL' }}</span>
+                    </div>
+                </div>
+
+                @if (res.erros.length > 0) {
+                    <h3 class="erros-titulo">Linhas com erro</h3>
+                    <div class="table-wrapper">
+                        <table class="importacao-table">
+                            <thead>
+                                <tr>
+                                    <th>Linha</th>
+                                    <th>Erro</th>
+                                    <th>Conteúdo original</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (erroLinha of res.erros; track erroLinha.linha) {
+                                    <tr>
+                                        <td>{{ erroLinha.linha }}</td>
+                                        <td>{{ erroLinha.mensagem }}</td>
+                                        <td><code class="linha-original">{{ erroLinha.original }}</code></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <div class="acoes">
+                    <p-button label="Ver no histórico" icon="pi pi-history" severity="secondary" [outlined]="true" routerLink="/historico" />
+                    <p-button label="Nova importação" icon="pi pi-plus" (onClick)="novaImportacao()" />
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,152 @@
+<p-toast />
+<p-confirmdialog />
+
+<div class="empresas-wrapper">
+    <div class="empresas-card">
+        <div class="empresas-header">
+            <h2>Empresas</h2>
+            <p-button label="Nova empresa" icon="pi pi-plus" (onClick)="nova()" />
+        </div>
+
+        <div class="empresas-body">
+            <form class="filtros" (ngSubmit)="filtrar()">
+                <div class="filtro">
+                    <label for="filtro-busca">Busca</label>
+                    <input pInputText id="filtro-busca" name="busca" placeholder="Razão social ou CNPJ" [(ngModel)]="filtroBusca" />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-ativo">Situação</label>
+                    <p-select inputId="filtro-ativo" name="ativo" [options]="opcoesAtivo" optionLabel="label" optionValue="value" placeholder="Todas" [showClear]="true" [(ngModel)]="filtroAtivo" />
+                </div>
+                <div class="filtro-acoes">
+                    <p-button type="submit" label="Filtrar" icon="pi pi-search" [loading]="carregando()" />
+                    <p-button type="button" label="Limpar" severity="secondary" [outlined]="true" (onClick)="limparFiltros()" />
+                </div>
+            </form>
+
+            @if (erro()) {
+                <div class="erro-box">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    {{ erro() }}
+                </div>
+            }
+
+            <div class="table-wrapper">
+                <table class="empresas-table">
+                    <thead>
+                        <tr>
+                            <th>Razão social</th>
+                            <th>CNPJ</th>
+                            <th>Usuários ativos</th>
+                            <th>Situação</th>
+                            <th>Criada em</th>
+                            <th class="col-acoes">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (empresa of empresas(); track empresa.id) {
+                            <tr [class.inativo]="!empresa.ativo">
+                                <td>
+                                    {{ empresa.razao_social }}
+                                    @if (empresa.id === idEmpresaLogada()) {
+                                        <span class="sua-empresa">(sua empresa)</span>
+                                    }
+                                </td>
+                                <td class="cnpj">{{ formatarCnpj(empresa.cnpj) }}</td>
+                                <td>{{ empresa.usuarios_ativos }}</td>
+                                <td>
+                                    <p-tag [value]="empresa.ativo ? 'Ativa' : 'Inativa'" [severity]="empresa.ativo ? 'success' : 'danger'" />
+                                </td>
+                                <td>{{ empresa.criado_em | date: 'dd/MM/yyyy' }}</td>
+                                <td class="col-acoes">
+                                    <p-button icon="pi pi-pencil" severity="secondary" [text]="true" [rounded]="true" pTooltip="Editar" ariaLabel="Editar" (onClick)="editar(empresa)" />
+                                    @if (empresa.ativo) {
+                                        <p-button
+                                            icon="pi pi-ban"
+                                            severity="danger"
+                                            [text]="true"
+                                            [rounded]="true"
+                                            [disabled]="empresa.id === idEmpresaLogada()"
+                                            [pTooltip]="empresa.id === idEmpresaLogada() ? 'Não é possível desativar a sua própria empresa' : 'Desativar'"
+                                            ariaLabel="Desativar"
+                                            (onClick)="confirmarDesativar(empresa)"
+                                        />
+                                    } @else {
+                                        <p-button icon="pi pi-replay" severity="success" [text]="true" [rounded]="true" pTooltip="Reativar" ariaLabel="Reativar" (onClick)="reativar(empresa)" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (empresas().length === 0) {
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    {{ carregando() ? 'Carregando...' : 'Nenhuma empresa encontrada.' }}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (paginacao().total_registros > 0) {
+                <p-paginator
+                    [first]="(pagina() - 1) * porPagina()"
+                    [rows]="porPagina()"
+                    [totalRecords]="paginacao().total_registros"
+                    [rowsPerPageOptions]="[10, 20, 50, 100]"
+                    (onPageChange)="mudarPagina($event)"
+                />
+            }
+        </div>
+    </div>
+</div>
+
+<p-dialog
+    [header]="empresaEditada() ? 'Editar empresa' : 'Nova empresa'"
+    [visible]="dialogoAberto()"
+    (visibleChange)="dialogoAberto.set($event)"
+    [modal]="true"
+    [style]="{ width: '30rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    <form class="form-empresa" (ngSubmit)="salvar()" id="form-empresa">
+        <div class="campo">
+            <label for="empresa-cnpj">CNPJ</label>
+            <input
+                pInputText
+                id="empresa-cnpj"
+                name="cnpj"
+                inputmode="numeric"
+                maxlength="18"
+                placeholder="00.000.000/0000-00"
+                [ngModel]="form.cnpj"
+                (ngModelChange)="aoDigitarCnpj($event)"
+                autofocus
+            />
+        </div>
+        <div class="campo">
+            <label for="empresa-razao">Razão social</label>
+            <input pInputText id="empresa-razao" name="razao_social" maxlength="200" [(ngModel)]="form.razao_social" />
+        </div>
+        <div class="campo campo-linha">
+            <p-toggleswitch inputId="empresa-ativo" name="ativo" [disabled]="empresaEditada()?.id === idEmpresaLogada()" [(ngModel)]="form.ativo" />
+            <label for="empresa-ativo">Ativa</label>
+        </div>
+
+        @if (empresaEditada() && empresaEditada()!.ativo && !form.ativo && empresaEditada()!.usuarios_ativos > 0) {
+            <small class="dica">Os {{ empresaEditada()!.usuarios_ativos }} usuário(s) ativo(s) desta empresa perdem o acesso ao salvar.</small>
+        }
+
+        @if (erroFormulario()) {
+            <div class="erro-box">
+                <i class="pi pi-exclamation-triangle"></i>
+                {{ erroFormulario() }}
+            </div>
+        }
+    </form>
+
+    <ng-template #footer>
+        <p-button label="Cancelar" severity="secondary" [outlined]="true" (onClick)="dialogoAberto.set(false)" />
+        <p-button type="submit" form="form-empresa" label="Salvar" icon="pi pi-check" [loading]="salvando()" />
+    </ng-template>
+</p-dialog>

@@ -12,21 +12,60 @@
             <div class="metrics-grid">
                 <div class="metric-box">
                     <span class="metric-label">Total de registros</span>
-                    <span class="metric-value">{{ paginacao.total_registros }}</span>
+                    <span class="metric-value">{{ paginacao().total_registros }}</span>
                 </div>
                 <div class="metric-box">
                     <span class="metric-label">Página</span>
-                    <span class="metric-value">{{ paginacao.pagina }}</span>
+                    <span class="metric-value">{{ paginacao().pagina }} de {{ paginacao().total_paginas || 1 }}</span>
                 </div>
                 <div class="metric-box">
                     <span class="metric-label">Itens por página</span>
-                    <span class="metric-value">{{ paginacao.por_pagina }}</span>
+                    <span class="metric-value">{{ paginacao().por_pagina }}</span>
                 </div>
                 <div class="metric-box">
                     <span class="metric-label">ISS total</span>
-                    <span class="metric-value">{{ resumo.iss_total | currency:'BRL' }}</span>
+                    <span class="metric-value">{{ resumo().iss_total | currency:'BRL' }}</span>
                 </div>
             </div>
+
+            <form class="filtros" (ngSubmit)="filtrar()">
+                <div class="filtro">
+                    <label for="filtro-arquivo">Arquivo</label>
+                    <input pInputText id="filtro-arquivo" name="arquivo" placeholder="Nome do arquivo" [(ngModel)]="filtroArquivo" />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-status">Status</label>
+                    <p-select
+                        inputId="filtro-status"
+                        name="status"
+                        [options]="opcoesStatus"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Todos"
+                        [showClear]="true"
+                        [(ngModel)]="filtroStatus"
+                    />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-data-inicio">Data inicial</label>
+                    <input pInputText id="filtro-data-inicio" name="data_inicio" type="date" [(ngModel)]="filtroDataInicio" />
+                </div>
+                <div class="filtro">
+                    <label for="filtro-data-fim">Data final</label>
+                    <input pInputText id="filtro-data-fim" name="data_fim" type="date" [(ngModel)]="filtroDataFim" />
+                </div>
+                <div class="filtro-acoes">
+                    <p-button type="submit" label="Filtrar" icon="pi pi-search" [loading]="carregando()" />
+                    <p-button type="button" label="Limpar" severity="secondary" [outlined]="true" (onClick)="limparFiltros()" />
+                </div>
+            </form>
+
+            @if (erro()) {
+                <div class="erro-box">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    {{ erro() }}
+                </div>
+            }
 
             <div class="table-wrapper">
                 <table class="historico-table">
@@ -43,7 +82,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (item of importacoes; track item.id) {
+                        @for (item of importacoes(); track item.id) {
                             <tr>
                                 <td>{{ item.id }}</td>
                                 <td>{{ item.arquivo }}</td>
@@ -57,16 +96,26 @@
                                 <td>{{ item.iss_total | currency:'BRL' }}</td>
                             </tr>
                         }
-                        @if (importacoes.length === 0) {
+                        @if (importacoes().length === 0) {
                             <tr>
                                 <td colspan="8" class="empty-state">
-                                    Nenhum registro encontrado.
+                                    {{ carregando() ? 'Carregando...' : 'Nenhum registro encontrado.' }}
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
+            @if (paginacao().total_registros > 0) {
+                <p-paginator
+                    [first]="(pagina() - 1) * porPagina()"
+                    [rows]="porPagina()"
+                    [totalRecords]="paginacao().total_registros"
+                    [rowsPerPageOptions]="[10, 20, 50, 100]"
+                    (onPageChange)="mudarPagina($event)"
+                />
+            }
         </div>
     </div>
 </div>

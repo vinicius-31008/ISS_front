@@ -1,17 +1,19 @@
-import { Component } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
+import { AuthService } from '../../layout/service/auth.service';
 
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
+    imports: [ButtonModule, InputTextModule, MessageModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
         <app-floating-configurator />
         <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
@@ -36,26 +38,23 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                     />
                                 </g>
                             </svg>
-                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Welcome to PrimeLand!</div>
-                            <span class="text-muted-color font-medium">Sign in to continue</span>
+                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bem-vindo!</div>
+                            <span class="text-muted-color font-medium">Entre para continuar</span>
                         </div>
 
-                        <div>
-                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                            <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8" [(ngModel)]="email" />
+                        <form (ngSubmit)="entrar()">
+                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">E-mail</label>
+                            <input pInputText id="email1" name="email" type="email" autocomplete="username" placeholder="seu@email.com" class="w-full md:w-120 mb-8" [(ngModel)]="email" />
 
-                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                            <p-password id="password1" [(ngModel)]="password" placeholder="Password" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
+                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Senha</label>
+                            <p-password id="password1" name="senha" [(ngModel)]="password" placeholder="Senha" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
 
-                            <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                                <div class="flex items-center">
-                                    <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
-                                    <label for="rememberme1">Remember me</label>
-                                </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
-                            </div>
-                            <p-button label="Sign In" styleClass="w-full" routerLink="/"></p-button>
-                        </div>
+                            @if (erro()) {
+                                <p-message severity="error" styleClass="mb-4">{{ erro() }}</p-message>
+                            }
+
+                            <p-button type="submit" label="Entrar" styleClass="w-full mt-4" [loading]="carregando()"></p-button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -63,9 +62,34 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
     `
 })
 export class Login {
+    private auth = inject(AuthService);
+    private router = inject(Router);
+
     email: string = '';
 
     password: string = '';
 
-    checked: boolean = false;
+    carregando = signal(false);
+    erro = signal('');
+
+    entrar(): void {
+        if (!this.email.trim() || !this.password) {
+            this.erro.set('Informe e-mail e senha.');
+            return;
+        }
+
+        this.carregando.set(true);
+        this.erro.set('');
+
+        this.auth.login(this.email.trim(), this.password).subscribe({
+            next: () => {
+                this.carregando.set(false);
+                this.router.navigate(['/']);
+            },
+            error: (erro: HttpErrorResponse) => {
+                this.carregando.set(false);
+                this.erro.set(erro.status === 0 ? 'Não foi possível conectar ao servidor.' : (erro.error?.mensagem ?? 'Erro ao fazer login.'));
+            }
+        });
+    }
 }
