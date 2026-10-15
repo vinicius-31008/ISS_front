@@ -44,7 +44,7 @@ export class AppMenu {
                     { label: 'Empresas', icon: 'pi pi-fw pi-building', routerLink: ['/empresas'] },
                     { label: 'Usuários', icon: 'pi pi-fw pi-users', routerLink: ['/usuarios'] }
                 ]
-            },
+            },/*
             {
                 label: 'UI Components',
                 items: [
@@ -64,9 +64,9 @@ export class AppMenu {
                     { label: 'Timeline', icon: 'pi pi-fw pi-calendar', routerLink: ['/uikit/timeline'] },
                     { label: 'Misc', icon: 'pi pi-fw pi-circle', routerLink: ['/uikit/misc'] }
                 ]
-            },
+            },*/
             {
-                label: 'Pages',
+                label: 'Paginas',
                 icon: 'pi pi-fw pi-briefcase',
                 path: '/pages',
                 items: [
@@ -96,12 +96,12 @@ export class AppMenu {
                                 routerLink: ['/auth/access']
                             }
                         ]
-                    },
+                    },/*
                     {
                         label: 'Crud',
                         icon: 'pi pi-fw pi-pencil',
                         routerLink: ['/pages/crud']
-                    },
+                    },*/
                     {
                         label: 'Not Found',
                         icon: 'pi pi-fw pi-exclamation-circle',
@@ -113,7 +113,7 @@ export class AppMenu {
                         routerLink: ['/pages/empty']
                     }
                 ]
-            },
+            }/*,
             {
                 label: 'Hierarchy',
                 path: '/hierarchy',
@@ -164,9 +164,9 @@ export class AppMenu {
                         ]
                     }
                 ]
-            },
+            }*/,
             {
-                label: 'Get Started',
+                label: 'Sobre',
                 items: [
                     {
                         label: 'Documentation',
@@ -176,7 +176,7 @@ export class AppMenu {
                     {
                         label: 'View Source',
                         icon: 'pi pi-fw pi-github',
-                        url: 'https://github.com/primefaces/sakai-ng',
+                        url: 'https://github.com/vinicius-31008/ISS_front',
                         target: '_blank'
                     }
                 ]
