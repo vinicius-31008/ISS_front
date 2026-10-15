@@ -272,7 +272,7 @@ export class AppConfigurator {
 
     primaryColors = computed<SurfacesType[]>(() => {
         const presetPalette = presets[this.layoutService.layoutConfig().preset as KeyOfType<typeof presets>].primitive;
-        const colors = ['emerald', 'green', 'lime', 'orange', 'amber', 'yellow', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
+        const colors = ['red', 'emerald', 'green', 'lime', 'orange', 'amber', 'yellow', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
         const palettes: SurfacesType[] = [{ name: 'noir', palette: {} }];
 
         colors.forEach((color) => {
@@ -288,6 +288,20 @@ export class AppConfigurator {
     getPresetExt() {
         const color: SurfacesType = this.primaryColors().find((c) => c.name === this.selectedPrimaryColor()) || {};
         const preset = this.layoutService.layoutConfig().preset;
+        const vividRedPalette = {
+            50: '#f81d1d',
+            100: '#f81d1d',
+            200: '#f81d1d',
+            300: '#f81d1d',
+            400: '#f81d1d',
+            500: '#f81d1d',
+            600: '#e61a1a',
+            700: '#bf1010',
+            800: '#8b0d0d',
+            900: '#5f0909',
+            950: '#2d0505'
+        };
+        const primaryPalette = color.name === 'red' ? vividRedPalette : color.palette;
 
         if (color.name === 'noir') {
             return {
@@ -341,7 +355,7 @@ export class AppConfigurator {
             if (preset === 'Nora') {
                 return {
                     semantic: {
-                        primary: color.palette,
+                        primary: primaryPalette,
                         colorScheme: {
                             light: {
                                 primary: {
@@ -377,7 +391,7 @@ export class AppConfigurator {
             } else {
                 return {
                     semantic: {
-                        primary: color.palette,
+                        primary: primaryPalette,
                         colorScheme: {
                             light: {
                                 primary: {
@@ -437,6 +451,7 @@ export class AppConfigurator {
         this.layoutService.layoutConfig.update((state) => ({ ...state, preset: event }));
         const preset = presets[event as KeyOfType<typeof presets>];
         const surfacePalette = this.surfaces.find((s) => s.name === this.selectedSurfaceColor())?.palette;
+
         $t().preset(preset).preset(this.getPresetExt()).surfacePalette(surfacePalette).use({ useDefaultOptions: true });
     }
 
