@@ -12,3 +12,11 @@ export function formatarCnpj(valor: string): string {
     if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
     return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
+
+/** Documento completo: 11 dígitos vira CPF (123.456.789-01), o resto segue a máscara de CNPJ. */
+export function formatarCpfCnpj(valor: string): string {
+    const d = somenteDigitos(valor);
+
+    if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+    return formatarCnpj(d);
+}

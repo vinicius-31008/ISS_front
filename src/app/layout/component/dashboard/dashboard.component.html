@@ -1,0 +1,144 @@
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <h2>Painel</h2>
+        <div class="dashboard-acoes">
+            <p-select [options]="opcoesPeriodo" optionLabel="label" optionValue="value" [(ngModel)]="meses" (onChange)="carregar()" ariaLabel="Período" />
+            <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true" [loading]="carregando()" ariaLabel="Atualizar" (onClick)="carregar()" />
+        </div>
+    </div>
+
+    @if (erro()) {
+        <div class="erro-box">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ erro() }}
+        </div>
+    }
+
+    @if (totais(); as t) {
+        <div class="kpis">
+            <div class="kpi">
+                <span class="kpi-label">ISS calculado</span>
+                <span class="kpi-valor">{{ t.valor_iss | currency: 'BRL' }}</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Valor dos serviços</span>
+                <span class="kpi-valor">{{ t.valor_servico | currency: 'BRL' }}</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Notas</span>
+                <span class="kpi-valor">{{ t.notas | number }}</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Importações</span>
+                <span class="kpi-valor">{{ t.importacoes | number }}</span>
+            </div>
+            <div class="kpi" [class.kpi-alerta]="t.linhas_com_erro > 0">
+                <span class="kpi-label">Linhas com erro</span>
+                <span class="kpi-valor">{{ t.linhas_com_erro | number }}</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Prestadores / Tomadores</span>
+                <span class="kpi-valor">{{ t.prestadores | number }} / {{ t.tomadores | number }}</span>
+            </div>
+        </div>
+
+        <div class="grade">
+            <section class="painel painel-largo">
+                <h3>ISS e notas por mês de emissão</h3>
+                @if (graficoMensal(); as g) {
+                    <p-chart type="bar" [data]="g.data" [options]="g.options" class="grafico grafico-alto" />
+                }
+            </section>
+
+            <section class="painel">
+                <h3>Importações por status</h3>
+                @if (semImportacoes()) {
+                    <p class="vazio">Nenhuma importação ainda.</p>
+                } @else if (graficoStatus(); as g) {
+                    <p-chart type="doughnut" [data]="g.data" [options]="g.options" class="grafico" />
+                }
+            </section>
+
+            <section class="painel">
+                <h3>Serviços com mais ISS</h3>
+                @if (semNotas()) {
+                    <p class="vazio">Nenhuma nota importada ainda.</p>
+                } @else if (graficoServicos(); as g) {
+                    <p-chart type="bar" [data]="g.data" [options]="g.options" class="grafico" />
+                }
+            </section>
+
+            <section class="painel">
+                <h3>Maiores tomadores</h3>
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th>Tomador</th>
+                            <th class="num">Notas</th>
+                            <th class="num">Serviços</th>
+                            <th class="num">ISS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (tomador of dados()!.top_tomadores; track tomador.cpf_cnpj) {
+                            <tr>
+                                <td>
+                                    <span class="principal">{{ tomador.razao_social || 'Sem razão social' }}</span>
+                                    <span class="secundario">{{ formatarCpfCnpj(tomador.cpf_cnpj) }}</span>
+                                </td>
+                                <td class="num">{{ tomador.notas }}</td>
+                                <td class="num">{{ tomador.valor_servico | currency: 'BRL' }}</td>
+                                <td class="num">{{ tomador.valor_iss | currency: 'BRL' }}</td>
+                            </tr>
+                        } @empty {
+                            <tr>
+                                <td colspan="4" class="vazio">Nenhum tomador encontrado.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="painel painel-largo">
+                <div class="painel-titulo">
+                    <h3>Últimas importações</h3>
+                    <a routerLink="/historico" class="link">Ver histórico</a>
+                </div>
+                <div class="tabela-wrapper">
+                    <table class="tabela">
+                        <thead>
+                            <tr>
+                                <th>Arquivo</th>
+                                <th>Data</th>
+                                <th>Status</th>
+                                <th class="num">Processadas</th>
+                                <th class="num">Erros</th>
+                                <th class="num">ISS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (item of dados()!.ultimas_importacoes; track item.id) {
+                                <tr>
+                                    <td>{{ item.arquivo }}</td>
+                                    <td>{{ item.data_importacao | date: 'dd/MM/yyyy HH:mm' }}</td>
+                                    <td>
+                                        <span class="status-pill" [ngClass]="'status-' + item.status">{{ rotulosStatus[item.status] ?? item.status }}</span>
+                                    </td>
+                                    <td class="num">{{ item.total_processadas }}</td>
+                                    <td class="num">{{ item.total_erros }}</td>
+                                    <td class="num">{{ item.iss_total | currency: 'BRL' }}</td>
+                                </tr>
+                            } @empty {
+                                <tr>
+                                    <td colspan="6" class="vazio">Nenhuma importação ainda.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    } @else if (carregando()) {
+        <p class="vazio">Carregando...</p>
+    }
+</div>

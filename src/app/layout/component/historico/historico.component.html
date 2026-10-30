@@ -88,7 +88,7 @@
                                 <td>{{ item.arquivo }}</td>
                                 <td>{{ item.data_importacao }}</td>
                                 <td>
-                                    <span class="status-pill">{{ item.status }}</span>
+                                    <span class="status-pill" [ngClass]="'status-' + item.status">{{ item.status }}</span>
                                 </td>
                                 <td>{{ item.total_linhas }}</td>
                                 <td>{{ item.total_processadas }}</td>

@@ -9,7 +9,8 @@
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
     border-radius: 1rem;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    border-top: 3px solid var(--app-accent);
+    box-shadow: 0 12px 32px -16px color-mix(in srgb, var(--app-accent) 45%, transparent);
     overflow: hidden;
 }
 
@@ -19,7 +20,7 @@
     justify-content: space-between;
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--surface-border);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(14, 165, 233, 0.02));
+    background: linear-gradient(135deg, var(--app-accent-soft), transparent 65%);
 }
 
 .historico-header h2 {
@@ -35,8 +36,8 @@
     gap: 0.5rem;
     padding: 0.45rem 0.85rem;
     border-radius: 999px;
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
+    background: var(--app-sucesso-bg);
+    color: var(--app-sucesso);
     font-size: 0.8rem;
     font-weight: 600;
 }
@@ -57,6 +58,7 @@
     border: 1px solid var(--surface-border);
     border-radius: 0.9rem;
     background: var(--surface-ground);
+    box-shadow: inset 3px 0 0 var(--app-accent);
 }
 
 .metric-label {
@@ -107,8 +109,8 @@
     margin-bottom: 1rem;
     padding: 0.75rem 1rem;
     border-radius: 0.75rem;
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background: var(--app-falha-bg);
+    color: var(--app-falha);
 }
 
 .table-wrapper {
@@ -142,7 +144,7 @@
 }
 
 .historico-table tbody tr:hover {
-    background: rgba(59, 130, 246, 0.03);
+    background: var(--app-accent-faint);
 }
 
 .status-pill {
@@ -153,8 +155,18 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563eb;
+    background: var(--app-falha-bg);
+    color: var(--app-falha);
+}
+
+.status-PROCESSADA {
+    background: var(--app-sucesso-bg);
+    color: var(--app-sucesso);
+}
+
+.status-PROCESSADA_COM_ERROS {
+    background: var(--app-alerta-bg);
+    color: var(--app-alerta);
 }
 
 .empty-state {

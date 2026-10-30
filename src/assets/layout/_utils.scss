@@ -16,6 +16,12 @@
     }
 }
 
+/* Logos da ISS: arte branca com fundo transparente. No tema claro inverte para preto;
+   o hue-rotate devolve o vermelho do "METEORA" ao tom original depois da inversão. */
+html:not(.app-dark) .logo-iss {
+    filter: invert(1) hue-rotate(180deg);
+}
+
 .p-toast {
     &.p-toast-top-right,
     &.p-toast-top-left,

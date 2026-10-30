@@ -9,6 +9,7 @@ import Nora from '@primeuix/themes/nora';
 import { PrimeNG } from 'primeng/config';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { PALETA_VERMELHA } from '@/app/layout/theme/paleta-vermelha';
 
 const presets = {
     Aura,
@@ -288,20 +289,7 @@ export class AppConfigurator {
     getPresetExt() {
         const color: SurfacesType = this.primaryColors().find((c) => c.name === this.selectedPrimaryColor()) || {};
         const preset = this.layoutService.layoutConfig().preset;
-        const vividRedPalette = {
-            50: '#f81d1d',
-            100: '#f81d1d',
-            200: '#f81d1d',
-            300: '#f81d1d',
-            400: '#f81d1d',
-            500: '#f81d1d',
-            600: '#e61a1a',
-            700: '#bf1010',
-            800: '#8b0d0d',
-            900: '#5f0909',
-            950: '#2d0505'
-        };
-        const primaryPalette = color.name === 'red' ? vividRedPalette : color.palette;
+        const primaryPalette = color.name === 'red' ? PALETA_VERMELHA : color.palette;
 
         if (color.name === 'noir') {
             return {

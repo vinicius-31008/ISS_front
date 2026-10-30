@@ -17,4 +17,17 @@
     --focus-ring-color: var(--p-focus-ring-color);
     --focus-ring-offset: var(--p-focus-ring-offset);
     --focus-ring-shadow: var(--p-focus-ring-shadow);
+
+    /* Tons derivados da cor primária, usados nas telas do sistema (histórico, importação, cadastros) */
+    --app-accent: var(--p-primary-color);
+    --app-accent-soft: color-mix(in srgb, var(--p-primary-color) 14%, transparent);
+    --app-accent-faint: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
+
+    /* Status: tokens do PrimeNG, que já se ajustam ao modo claro/escuro */
+    --app-sucesso: var(--p-green-500);
+    --app-sucesso-bg: color-mix(in srgb, var(--p-green-500) 14%, transparent);
+    --app-alerta: var(--p-amber-500);
+    --app-alerta-bg: color-mix(in srgb, var(--p-amber-500) 16%, transparent);
+    --app-falha: var(--p-red-500);
+    --app-falha-bg: color-mix(in srgb, var(--p-red-500) 12%, transparent);
 }

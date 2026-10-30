@@ -9,7 +9,8 @@
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
     border-radius: 1rem;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    border-top: 3px solid var(--app-accent);
+    box-shadow: 0 12px 32px -16px color-mix(in srgb, var(--app-accent) 45%, transparent);
     overflow: hidden;
 }
 
@@ -19,7 +20,7 @@
     justify-content: space-between;
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--surface-border);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(14, 165, 233, 0.02));
+    background: linear-gradient(135deg, var(--app-accent-soft), transparent 65%);
 }
 
 .importacao-header h2 {
@@ -64,7 +65,7 @@
 .dropzone:hover,
 .dropzone.arrastando {
     border-color: var(--primary-color);
-    background: rgba(59, 130, 246, 0.05);
+    background: var(--app-accent-faint);
 }
 
 .dropzone.desabilitado {
@@ -137,18 +138,18 @@
 }
 
 .aviso-sucesso {
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
+    background: var(--app-sucesso-bg);
+    color: var(--app-sucesso);
 }
 
 .aviso-alerta {
-    background: rgba(234, 179, 8, 0.15);
-    color: #a16207;
+    background: var(--app-alerta-bg);
+    color: var(--app-alerta);
 }
 
 .aviso-falha {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background: var(--app-falha-bg);
+    color: var(--app-falha);
 }
 
 .formato {
@@ -190,6 +191,7 @@
     border: 1px solid var(--surface-border);
     border-radius: 0.9rem;
     background: var(--surface-ground);
+    box-shadow: inset 3px 0 0 var(--app-accent);
 }
 
 .metric-label {
@@ -216,18 +218,18 @@
 }
 
 .status-sucesso {
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
+    background: var(--app-sucesso-bg);
+    color: var(--app-sucesso);
 }
 
 .status-alerta {
-    background: rgba(234, 179, 8, 0.15);
-    color: #a16207;
+    background: var(--app-alerta-bg);
+    color: var(--app-alerta);
 }
 
 .status-falha {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background: var(--app-falha-bg);
+    color: var(--app-falha);
 }
 
 .erros-titulo {

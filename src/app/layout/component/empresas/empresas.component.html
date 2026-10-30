@@ -147,6 +147,6 @@
 
     <ng-template #footer>
         <p-button label="Cancelar" severity="secondary" [outlined]="true" (onClick)="dialogoAberto.set(false)" />
-        <p-button type="submit" form="form-empresa" label="Salvar" icon="pi pi-check" [loading]="salvando()" />
+        <p-button label="Salvar" icon="pi pi-check" [loading]="salvando()" (onClick)="salvar()" />
     </ng-template>
 </p-dialog>
