@@ -2,72 +2,126 @@
 
 ## Visão geral
 
-Este frontend foi desenvolvido em Angular para gerir o fluxo de importação, autenticação e acompanhamento de empresas, usuários, histórico e processos de importação de dados. A aplicação trabalha em conjunto com uma API PHP localizada em `http://localhost:8000/src`, que expõe endpoints como login, logout, histórico, importação e dados de consulta.
+Este frontend foi desenvolvido em Angular para gerenciar o fluxo completo de importação, exportação, autenticação, histórico e consulta de notas fiscais de ISS.
 
-## Como o projeto funciona
+A aplicação se comunica com a API em `http://localhost:8000` e oferece uma interface para:
 
-A aplicação usa uma arquitetura baseada em componentes standalone do Angular, com serviços injetáveis para controle de sessão, layout e consumo de API. O fluxo principal é:
+- login e controle de sessão
+- importação de arquivos TXT
+- consulta de histórico de processamento
+- exportação de notas para o formato SIGISSWEB
+- acompanhamento de status, erros e valores de ISS
 
-- O usuário acessa a tela de login e envia email e senha.
-- O `AuthService` chama o endpoint `/api/login.php`.
-- Se a resposta for válida, a sessão é salva no `localStorage` e o estado de autenticação do Angular é atualizado.
-- Os guards e rotas protegem páginas administrativas e de acesso restrito.
-- Os serviços de domínio fazem requisições à API para histórico, importação, empresas e usuários.
+## Como usar a aplicação corretamente
 
-## Fluxo de autenticação
+### 1. Preparação do ambiente
 
-A classe `AuthService` mantém a sessão em memória através de signals e valida a expiração do token com base em data e hora. Em caso de expiração ou logout, a aplicação limpa a sessão local e redireciona para `/auth/login`.
+Antes de iniciar a aplicação, certifique-se de que o backend do projeto ISS_back esteja rodando na porta `8000`.
 
-## Estrutura principal do projeto
-
-- `src/app/layout`: estrutura base da aplicação, menus, topbar, sidebar, autenticação e serviços de layout.
-- `src/app/pages`: telas e módulos da interface, como documentação, dashboard, login e CRUD.
-- `src/app/layout/interfaces`: interfaces TypeScript para empresas, histórico, importação e usuários.
-- `src/app/layout/service`: serviços de API, guards, autenticação e gerenciamento do layout.
-- `src/assets`: estilos globais, assets visuais e tema do sistema.
-
-## Principais serviços e responsabilidades
-
-- `AuthService`: login, logout, manutenção de sessão e controle de acesso.
-- `LayoutService`: tema, modo do menu, sidebar e estado visual da aplicação.
-- `ApiService`: comunicação com endpoints de saúde, histórico e importação.
-- `empresas.service.ts`, `usuarios.service.ts` e `importar.service.ts`: integrações específicas de domínio.
-
-## Rotas e navegação
-
-A navegação principal é definida em `src/app/pages/pages.routes.ts`. A aplicação possui rotas como documentação, CRUD, autenticação e fallback de página não encontrada.
-
-## Dependências principais
-
-- Angular 21: framework principal da aplicação.
-- PrimeNG: biblioteca de componentes UI.
-- PrimeIcons: ícones do sistema.
-- Tailwind CSS: utilitários para layout e espaçamento.
-- RxJS: programação reativa e streams assíncronos.
-- Chart.js: gráficos e visualizações.
-- TypeScript: tipagem e organização do código.
-
-## Como rodar o projeto localmente
-
-No diretório do projeto, execute:
+Depois, no diretório do frontend execute:
 
 ```bash
 npm install
 npm start
 ```
 
-O projeto normalmente fica disponível em `http://localhost:4200/`. O backend precisa estar em execução em `http://localhost:8000` para que as ações de login, importação e consulta funcionem corretamente.
+A interface normalmente fica disponível em:
+
+```text
+http://localhost:4200
+```
+
+### 2. Login
+
+Acesse a tela de login e informe as credenciais válidas do sistema.
+
+Se o usuário estiver autenticado, a sessão será salva no navegador e a aplicação liberará o acesso às páginas internas.
+
+### 3. Importação de arquivos
+
+Na tela de importação, carregue um arquivo TXT com a estrutura esperada:
+
+```text
+numero;serie;data_emissao;cnpj_prestador;razao_social_prestador;documento_tomador;razao_social_tomador;codigo_lc116;municipio_ibge;valor_servico
+```
+
+Campos obrigatórios:
+
+- numero
+- data_emissao
+- cnpj_prestador
+- codigo_lc116
+- valor_servico
+
+Formato recomendado:
+
+- data_emissao: `YYYY-MM-DD` ou `YYYY-MM-DD HH:MM:SS`
+- valor_servico: use `1000,50` ou `1.000,50`
+- arquivo: somente `.txt`
+
+### 4. Verificação no histórico
+
+Após a importação, utilize a tela de histórico para:
+
+- confirmar o status da importação
+- validar linhas processadas
+- verificar erros e valores totais
+- consultar o ISS acumulado
+
+Os filtros ajudam a localizar registros específicos antes de exportar ou revisar o processamento.
+
+### 5. Exportação de nota
+
+Na tela de exportação, escolha uma nota disponível para exportar e configure corretamente:
+
+- Regime: `V`, `S`, `M` ou `L`
+- Retenção: `N`, `S`, `F`, `D` ou `I`
+- Homologação: marque apenas quando for uma validação
+
+Ao confirmar, a aplicação gera um arquivo TXT no formato solicitado para uso com o SIGISSWEB.
+
+## Fluxo ideal de uso
+
+1. Faça login.
+2. Importe um arquivo TXT corretamente formatado.
+3. Revise a importação pelo histórico.
+4. Se necessário, exporte a nota desejada com os parâmetros corretos.
+5. Mantenha o backend em execução durante o uso do sistema localmente.
+
+## Estrutura principal do projeto
+
+- `src/app/layout`: layout, menus, autenticação, serviços e interfaces
+- `src/app/pages`: páginas de uso da aplicação, como documentação, dashboard, login e CRUD
+- `src/app/layout/service`: serviços que consomem a API e controlam autenticação
+- `src/assets`: estilos e recursos visuais do sistema
+
+## Principais serviços
+
+- `AuthService`: login, logout e controle de sessão
+- `LayoutService`: tema e configuração visual da interface
+- `ApiService`: integração com a API do backend
+- `importar.service.ts`: importação, histórico e exportação
+
+## Dependências principais
+
+- Angular 21
+- PrimeNG
+- PrimeIcons
+- RxJS
+- TypeScript
 
 ## Comandos úteis
 
 ```bash
-npm start        # inicia a aplicação em modo desenvolvimento
-npm run build    # gera a build de produção
-npm run test     # executa os testes
+npm install
+npm start
+npm run build
+npm run test
 ```
 
 ## Observações importantes
 
-A API base está configurada em `src/app/layout/service/importar.service.ts` como `http://localhost:8000/src`. Se o backend mudar de porta ou pasta, esse valor precisa ser ajustado.
-
-A camada de autenticação salva dados sensíveis no navegador e valida a expiração antes de autorizar acesso. Sempre mantenha a sessão e a API sincronizadas.
+- O backend precisa estar em execução em `http://localhost:8000`.
+- A API base está configurada no serviço de comunicação do frontend; se a porta ou caminho do backend mudar, o ajuste deve ser feito ali.
+- Sempre valide a estrutura do arquivo antes de importar, para evitar erros de processamento.
+- O uso de homologação deve ser limitado a validação e não a geração de arquivos definitivos.

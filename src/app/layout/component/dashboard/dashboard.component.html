@@ -1,6 +1,13 @@
 <div class="dashboard-wrapper">
     <div class="dashboard-header">
-        <h2>Painel</h2>
+        <div class="dashboard-title-group">
+            <span class="dashboard-badge">
+                <i class="pi pi-chart-bar"></i>
+                Visão geral
+            </span>
+            <h2>Painel</h2>
+        </div>
+
         <div class="dashboard-acoes">
             <p-select [options]="opcoesPeriodo" optionLabel="label" optionValue="value" [(ngModel)]="meses" (onChange)="carregar()" ariaLabel="Período" />
             <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true" [loading]="carregando()" ariaLabel="Atualizar" (onClick)="carregar()" />
@@ -68,7 +75,7 @@
                 }
             </section>
 
-            <section class="painel">
+            <section class="painel painel-tomadores">
                 <h3>Maiores tomadores</h3>
                 <table class="tabela">
                     <thead>
