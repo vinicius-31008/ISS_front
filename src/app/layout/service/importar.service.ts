@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { IImportacaoResponse } from '../interfaces/importacao.interface';
 
@@ -12,6 +12,12 @@ export interface IFiltrosHistorico {
   arquivo?: string;
   data_inicio?: string;
   data_fim?: string;
+}
+
+export interface IExportacaoNotaParams {
+  regime?: 'S' | 'V' | 'M' | 'L';
+  retencao?: 'N' | 'S' | 'F' | 'D' | 'I';
+  homologacao?: boolean;
 }
 
 @Injectable({
@@ -63,5 +69,22 @@ export class ApiService {
 
     return retorno;
    }
+
+  exportarNota(id: number, params: IExportacaoNotaParams = {}): Observable<HttpResponse<Blob>> {
+    const queryParams = new HttpParams({
+      fromObject: {
+        id: String(id),
+        regime: params.regime ?? 'V',
+        retencao: params.retencao ?? 'N',
+        homologacao: params.homologacao ? 'true' : 'false'
+      }
+    });
+
+    return this.http.get(`${this.apiUrl}/api/exportar-iss.php`, {
+      params: queryParams,
+      responseType: 'blob',
+      observe: 'response'
+    }) as Observable<HttpResponse<Blob>>;
+  }
 
 }

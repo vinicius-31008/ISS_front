@@ -8,11 +8,12 @@ import { SelectModule } from 'primeng/select';
 import { Subscription } from 'rxjs';
 import { IHistoricoResponse } from '../../interfaces/historico.interface';
 import { ApiService, IFiltrosHistorico } from '../../service/importar.service';
+import { ExportacaoNotaComponent } from '../exportacao-nota/exportacao-nota.component';
 
 @Component({
     selector: 'app-historico',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, PaginatorModule, SelectModule],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, PaginatorModule, SelectModule, ExportacaoNotaComponent],
     templateUrl: './historico.component.html',
     styleUrls: ['./historico.component.scss']
 })
