@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
 import { DashboardComponent } from './app/layout/component/dashboard/dashboard.component';
 import { EmpresasComponent } from './app/layout/component/empresas/empresas.component';
+import { ExportacaoNotaComponent } from './app/layout/component/exportacao-nota/exportacao-nota.component';
 import { HistoricoComponent } from './app/layout/component/historico/historico.component';
 import { ImportacaoComponent } from './app/layout/component/importacao/importacao.component';
 import { UsuariosComponent } from './app/layout/component/usuarios/usuarios.component';
@@ -21,6 +22,7 @@ export const appRoutes: Routes = [
         children: [
             { path: 'dashboard', component: DashboardComponent },
             { path: 'importacao', component: ImportacaoComponent },
+            { path: 'exportacao', component: ExportacaoNotaComponent },
             { path: 'historico', component: HistoricoComponent },
             { path: 'usuarios', component: UsuariosComponent, canActivate: [adminGuard] },
             { path: 'empresas', component: EmpresasComponent, canActivate: [adminGuard] },

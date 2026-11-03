@@ -1,124 +1,196 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../service/importar.service';
+
+interface INotaExportavel {
+    id: number;
+    label: string;
+    numero: string;
+    serie: string;
+    data_emissao: string;
+    valor_iss: number;
+    status: string;
+}
+
+interface INotaDetalheResponse {
+    id: number;
+    numero: string;
+    serie: string;
+    data_emissao: string;
+    valor_iss: number;
+    status: string;
+}
+
+interface IDetalheImportacaoResponse {
+    sucesso: boolean;
+    dados?: {
+        notas?: INotaDetalheResponse[];
+    };
+}
 
 @Component({
     selector: 'app-exportacao-nota',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, SelectModule, InputNumberModule, CheckboxModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, SelectModule, CheckboxModule],
     template: `
-        <div class="exportacao-nota-card">
-            <div class="exportacao-nota-header">
-                <div>
-                    <h3>Exportar nota ISS</h3>
-                    <p>Gera o arquivo TXT do SIGISSWEB para a nota selecionada.</p>
-                </div>
-            </div>
-
-            <div class="exportacao-nota-body">
-                <div class="campo">
-                    <label for="nota-id">ID da nota</label>
-                    <p-inputNumber
-                        id="nota-id"
-                        inputId="nota-id"
-                        [(ngModel)]="notaId"
-                        [min]="1"
-                        [showButtons]="false"
-                        placeholder="Ex.: 123"
-                    />
+        <div class="exportacao-wrapper">
+            <div class="exportacao-card">
+                <div class="exportacao-header">
+                    <div>
+                        <h2>Exportar nota para ISS</h2>
+                        <p>Selecione uma nota fiscal já cadastrada para gerar o arquivo TXT do SIGISSWEB.</p>
+                    </div>
+                    <a routerLink="/historico" class="link-historico">
+                        <i class="pi pi-history"></i>
+                        Ver histórico
+                    </a>
                 </div>
 
-                <div class="campo-grid">
+                <div class="exportacao-body">
                     <div class="campo">
-                        <label for="regime">Regime</label>
-                        <p-select
-                            inputId="regime"
-                            [options]="opcoesRegime"
-                            optionLabel="label"
-                            optionValue="value"
-                            [(ngModel)]="regime"
-                            [showClear]="false"
+                        <label for="nota-id">Nota fiscal</label>
+                        @if (carregandoNotas()) {
+                            <div class="select-loading">
+                                <i class="pi pi-spin pi-spinner"></i>
+                                Carregando notas...
+                            </div>
+                        } @else {
+                            <p-select
+                                inputId="nota-id"
+                                [options]="notasDisponiveis()"
+                                optionLabel="label"
+                                optionValue="id"
+                                placeholder="Selecione uma nota"
+                                [showClear]="false"
+                                [(ngModel)]="notaId"
+                                [disabled]="notasDisponiveis().length === 0"
+                            />
+                        }
+                    </div>
+
+                    @if (!carregandoNotas() && notasDisponiveis().length === 0) {
+                        <div class="aviso aviso-falha">
+                            <i class="pi pi-exclamation-triangle"></i>
+                            Nenhuma nota disponível para exportação.
+                        </div>
+                    }
+
+                    <div class="campo-grid">
+                        <div class="campo">
+                            <label for="regime">Regime</label>
+                            <p-select
+                                inputId="regime"
+                                [options]="opcoesRegime"
+                                optionLabel="label"
+                                optionValue="value"
+                                [(ngModel)]="regime"
+                                [showClear]="false"
+                            />
+                        </div>
+
+                        <div class="campo">
+                            <label for="retencao">Retenção</label>
+                            <p-select
+                                inputId="retencao"
+                                [options]="opcoesRetencao"
+                                optionLabel="label"
+                                optionValue="value"
+                                [(ngModel)]="retencao"
+                                [showClear]="false"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="campo-check">
+                        <p-checkbox
+                            [(ngModel)]="homologacao"
+                            [binary]="true"
+                            inputId="homologacao"
+                            label="Homologação (somente validação)"
                         />
                     </div>
 
-                    <div class="campo">
-                        <label for="retencao">Retenção</label>
-                        <p-select
-                            inputId="retencao"
-                            [options]="opcoesRetencao"
-                            optionLabel="label"
-                            optionValue="value"
-                            [(ngModel)]="retencao"
-                            [showClear]="false"
+                    @if (erro()) {
+                        <div class="aviso aviso-falha">
+                            <i class="pi pi-exclamation-triangle"></i>
+                            {{ erro() }}
+                        </div>
+                    }
+
+                    @if (mensagem()) {
+                        <div class="aviso aviso-sucesso">
+                            <i class="pi pi-check-circle"></i>
+                            {{ mensagem() }}
+                        </div>
+                    }
+
+                    <div class="acoes">
+                        <p-button
+                            label="Exportar TXT"
+                            icon="pi pi-download"
+                            [loading]="exportando()"
+                            [disabled]="exportando() || !notaId || notaId < 1 || notasDisponiveis().length === 0"
+                            (onClick)="exportar()"
                         />
                     </div>
-                </div>
-
-                <div class="campo-check">
-                    <p-checkbox
-                        [(ngModel)]="homologacao"
-                        [binary]="true"
-                        inputId="homologacao"
-                        label="Homologação (somente validação)"
-                    />
-                </div>
-
-                @if (erro()) {
-                    <div class="aviso aviso-falha">
-                        <i class="pi pi-exclamation-triangle"></i>
-                        {{ erro() }}
-                    </div>
-                }
-
-                @if (mensagem()) {
-                    <div class="aviso aviso-sucesso">
-                        <i class="pi pi-check-circle"></i>
-                        {{ mensagem() }}
-                    </div>
-                }
-
-                <div class="acoes">
-                    <p-button
-                        label="Exportar TXT"
-                        icon="pi pi-download"
-                        [loading]="exportando()"
-                        [disabled]="exportando() || !notaId || notaId < 1"
-                        (onClick)="exportar()"
-                    />
                 </div>
             </div>
         </div>
     `,
     styles: [
         `
-            .exportacao-nota-card {
-                border: 1px solid var(--surface-border);
-                border-radius: 14px;
+            .exportacao-wrapper {
+                display: flex;
+                justify-content: center;
+                padding: 1.5rem;
+            }
+
+            .exportacao-card {
+                width: min(900px, 100%);
                 background: var(--surface-card);
-                padding: 1.25rem;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+                border: 1px solid var(--surface-border);
+                border-radius: 16px;
+                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+                padding: 1.5rem;
             }
 
-            .exportacao-nota-header h3 {
+            .exportacao-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .exportacao-header h2 {
                 margin: 0;
-                font-size: 1.125rem;
+                font-size: 1.5rem;
             }
 
-            .exportacao-nota-header p {
+            .exportacao-header p {
                 margin: 0.35rem 0 0;
                 color: var(--text-color-secondary);
             }
 
-            .exportacao-nota-body {
-                margin-top: 1.25rem;
+            .link-historico {
+                display: inline-flex;
+                align-items: center;
+                gap: .5rem;
+                color: var(--primary-color);
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+            .exportacao-body {
                 display: grid;
-                gap: 1rem;
+                gap: 1.25rem;
             }
 
             .campo-grid {
@@ -142,6 +214,14 @@ import { ApiService } from '../../service/importar.service';
                 display: flex;
                 align-items: center;
                 min-height: 2.5rem;
+            }
+
+            .select-loading {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                min-height: 42px;
+                color: var(--text-color-secondary);
             }
 
             .acoes {
@@ -171,6 +251,11 @@ import { ApiService } from '../../service/importar.service';
             }
 
             @media (max-width: 640px) {
+                .exportacao-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
                 .campo-grid {
                     grid-template-columns: 1fr;
                 }
@@ -178,7 +263,7 @@ import { ApiService } from '../../service/importar.service';
         `
     ]
 })
-export class ExportacaoNotaComponent {
+export class ExportacaoNotaComponent implements OnInit {
     private apiService = inject(ApiService);
 
     notaId: number | null = null;
@@ -186,8 +271,10 @@ export class ExportacaoNotaComponent {
     retencao: 'N' | 'S' | 'F' | 'D' | 'I' = 'N';
     homologacao = false;
     readonly exportando = signal(false);
+    readonly carregandoNotas = signal(false);
     readonly erro = signal('');
     readonly mensagem = signal('');
+    readonly notasDisponiveis = signal<INotaExportavel[]>([]);
 
     readonly opcoesRegime = [
         { label: 'Variável (V)', value: 'V' },
@@ -204,11 +291,71 @@ export class ExportacaoNotaComponent {
         { label: 'Sem incidência (I)', value: 'I' }
     ];
 
+    ngOnInit(): void {
+        this.carregarNotasDisponiveis();
+    }
+
+    private carregarNotasDisponiveis(): void {
+        this.carregandoNotas.set(true);
+        this.erro.set('');
+
+        this.apiService.getHistorico<{ sucesso: boolean; dados?: { importacoes?: Array<{ id: number }> } }>({
+            pagina: 1,
+            por_pagina: 100
+        }).subscribe({
+            next: (resposta) => {
+                const importacoes = resposta?.dados?.importacoes ?? [];
+                const ids = importacoes.map((item) => item.id);
+
+                if (!ids.length) {
+                    this.notasDisponiveis.set([]);
+                    this.carregandoNotas.set(false);
+                    return;
+                }
+
+                forkJoin(
+                    ids.map((idImportacao) => this.apiService.getHistorico<IDetalheImportacaoResponse>({
+                        id: idImportacao
+                    }))
+                ).subscribe({
+                    next: (detalhes) => {
+                        const notas = detalhes
+                            .flatMap((detalhe) => detalhe?.dados?.notas ?? [])
+                            .map((nota) => ({
+                                id: nota.id,
+                                label: `#${nota.id} • Nº ${nota.numero} • ${nota.serie || 'S/'} • ${this.formatarData(nota.data_emissao)}`,
+                                numero: nota.numero,
+                                serie: nota.serie,
+                                data_emissao: nota.data_emissao,
+                                valor_iss: nota.valor_iss,
+                                status: nota.status
+                            }))
+                            .sort((a, b) => b.id - a.id);
+
+                        this.notasDisponiveis.set(notas);
+                        this.notaId = notas.length > 0 ? notas[0].id : null;
+                        this.carregandoNotas.set(false);
+                    },
+                    error: async (erro: HttpErrorResponse) => {
+                        this.erro.set(await this.lerMensagemErro(erro));
+                        this.notasDisponiveis.set([]);
+                        this.carregandoNotas.set(false);
+                    }
+                });
+            },
+            error: async (erro: HttpErrorResponse) => {
+                this.erro.set(await this.lerMensagemErro(erro));
+                this.notasDisponiveis.set([]);
+                this.carregandoNotas.set(false);
+            }
+        });
+    }
+
     exportar(): void {
         const id = Number(this.notaId);
 
         if (!Number.isFinite(id) || id <= 0) {
-            this.erro.set('Informe um ID da nota válido.');
+            this.erro.set('Selecione uma nota válida para exportar.');
             this.mensagem.set('');
             return;
         }
@@ -244,6 +391,19 @@ export class ExportacaoNotaComponent {
                 this.exportando.set(false);
             }
         });
+    }
+
+    private formatarData(data: string): string {
+        if (!data) {
+            return 'Sem data';
+        }
+
+        const valor = new Date(data);
+        if (Number.isNaN(valor.getTime())) {
+            return data;
+        }
+
+        return valor.toLocaleDateString('pt-BR');
     }
 
     private async lerMensagemErro(erro: HttpErrorResponse): Promise<string> {

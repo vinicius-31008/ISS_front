@@ -34,6 +34,7 @@ export class AppMenu {
                 label: 'Notas Fiscais',
                 items: [
                     { label: 'Importar', icon: 'pi pi-fw pi-upload', routerLink: ['/importacao'] },
+                    { label: 'Exportar', icon: 'pi pi-fw pi-download', routerLink: ['/exportacao'] },
                     { label: 'Histórico', icon: 'pi pi-fw pi-history', routerLink: ['/historico'] }
                 ]
             },

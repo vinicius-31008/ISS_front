@@ -6,6 +6,7 @@ import { IImportacaoResponse } from '../interfaces/importacao.interface';
 export const API_URL = 'http://localhost:8000/src';
 
 export interface IFiltrosHistorico {
+  id?: number;
   pagina?: number;
   por_pagina?: number;
   status?: string;
