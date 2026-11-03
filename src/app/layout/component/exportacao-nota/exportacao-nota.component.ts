@@ -148,30 +148,34 @@ interface IDetalheImportacaoResponse {
         `
             .exportacao-wrapper {
                 display: flex;
-                justify-content: center;
-                padding: 1.5rem;
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 0.5rem 0;
             }
 
             .exportacao-card {
-                width: min(900px, 100%);
                 background: var(--surface-card);
                 border: 1px solid var(--surface-border);
-                border-radius: 16px;
-                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-                padding: 1.5rem;
+                border-radius: 1rem;
+                border-top: 3px solid var(--app-accent);
+                box-shadow: 0 12px 32px -16px color-mix(in srgb, var(--app-accent) 45%, transparent);
+                overflow: hidden;
             }
 
             .exportacao-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 1rem;
-                margin-bottom: 1.5rem;
+                padding: 1.25rem 1.5rem;
+                border-bottom: 1px solid var(--surface-border);
+                background: linear-gradient(135deg, var(--app-accent-soft), transparent 65%);
             }
 
             .exportacao-header h2 {
                 margin: 0;
-                font-size: 1.5rem;
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: var(--text-color);
             }
 
             .exportacao-header p {
@@ -182,15 +186,18 @@ interface IDetalheImportacaoResponse {
             .link-historico {
                 display: inline-flex;
                 align-items: center;
-                gap: .5rem;
+                gap: 0.4rem;
+                font-size: 0.875rem;
+                font-weight: 600;
                 color: var(--primary-color);
                 text-decoration: none;
-                font-weight: 600;
             }
 
             .exportacao-body {
-                display: grid;
+                display: flex;
+                flex-direction: column;
                 gap: 1.25rem;
+                padding: 1.5rem;
             }
 
             .campo-grid {
@@ -206,8 +213,11 @@ interface IDetalheImportacaoResponse {
             }
 
             .campo label {
+                font-size: 0.75rem;
+                color: var(--text-color-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
                 font-weight: 600;
-                color: var(--text-color);
             }
 
             .campo-check {
@@ -227,6 +237,8 @@ interface IDetalheImportacaoResponse {
             .acoes {
                 display: flex;
                 justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 0.5rem;
             }
 
             .aviso {
@@ -234,26 +246,28 @@ interface IDetalheImportacaoResponse {
                 align-items: center;
                 gap: 0.5rem;
                 padding: 0.75rem 1rem;
-                border-radius: 10px;
-                font-weight: 500;
+                border-radius: 0.75rem;
             }
 
             .aviso-falha {
-                background: rgba(239, 68, 68, 0.08);
-                color: #b91c1c;
-                border: 1px solid rgba(239, 68, 68, 0.2);
+                background: var(--app-falha-bg);
+                color: var(--app-falha);
             }
 
             .aviso-sucesso {
-                background: rgba(34, 197, 94, 0.08);
-                color: #15803d;
-                border: 1px solid rgba(34, 197, 94, 0.2);
+                background: var(--app-sucesso-bg);
+                color: var(--app-sucesso);
             }
 
             @media (max-width: 640px) {
                 .exportacao-header {
                     flex-direction: column;
                     align-items: flex-start;
+                    gap: 0.75rem;
+                }
+
+                .exportacao-body {
+                    padding: 1rem;
                 }
 
                 .campo-grid {
