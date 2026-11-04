@@ -1,29 +1,29 @@
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../service/importar.service';
+import { formatarCpfCnpj } from '../../utils/cnpj';
 
-interface INotaExportavel {
-    id: number;
-    label: string;
-    numero: string;
-    serie: string;
-    data_emissao: string;
-    valor_iss: number;
-    status: string;
-}
-
+/** Nota como vem em historico.php?id= (prestador, tomador e serviço aninhados). */
 interface INotaDetalheResponse {
     id: number;
     numero: string;
     serie: string;
     data_emissao: string;
+    prestador: { cnpj: string; razao_social: string | null } | null;
+    tomador: { cpf_cnpj: string; razao_social: string | null } | null;
+    servico: { codigo_lc116: string; descricao: string } | null;
+    valor_servico: number;
     valor_iss: number;
     status: string;
 }
@@ -35,260 +35,61 @@ interface IDetalheImportacaoResponse {
     };
 }
 
+/** Nota achatada para a tabela de exportação. */
+interface INotaExportavel {
+    id: number;
+    numero: string;
+    serie: string;
+    data_emissao: string;
+    prestador_cnpj: string;
+    prestador_razao_social: string | null;
+    tomador_documento: string | null;
+    tomador_razao_social: string | null;
+    codigo_lc116: string;
+    valor_servico: number;
+    valor_iss: number;
+    status: string;
+    /** MMAAAA, como no nome do arquivo do SIGISSWEB. */
+    competencia: string;
+    /** Texto em minúsculas para a busca. */
+    busca: string;
+}
+
+interface IErroNotaLote {
+    id: number;
+    numero: string | null;
+    mensagem: string;
+}
+
+const LIMITE_LOTE = 500;
+
 @Component({
     selector: 'app-exportacao-nota',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, SelectModule, CheckboxModule],
-    template: `
-        <div class="exportacao-wrapper">
-            <div class="exportacao-card">
-                <div class="exportacao-header">
-                    <div>
-                        <h2>Exportar nota para ISS</h2>
-                        <p>Selecione uma nota fiscal já cadastrada para gerar o arquivo TXT do SIGISSWEB.</p>
-                    </div>
-                    <a routerLink="/historico" class="link-historico">
-                        <i class="pi pi-history"></i>
-                        Ver histórico
-                    </a>
-                </div>
-
-                <div class="exportacao-body">
-                    <div class="campo">
-                        <label for="nota-id">Nota fiscal</label>
-                        @if (carregandoNotas()) {
-                            <div class="select-loading">
-                                <i class="pi pi-spin pi-spinner"></i>
-                                Carregando notas...
-                            </div>
-                        } @else {
-                            <p-select
-                                inputId="nota-id"
-                                [options]="notasDisponiveis()"
-                                optionLabel="label"
-                                optionValue="id"
-                                placeholder="Selecione uma nota"
-                                [showClear]="false"
-                                [(ngModel)]="notaId"
-                                [disabled]="notasDisponiveis().length === 0"
-                            />
-                        }
-                    </div>
-
-                    @if (!carregandoNotas() && notasDisponiveis().length === 0) {
-                        <div class="aviso aviso-falha">
-                            <i class="pi pi-exclamation-triangle"></i>
-                            Nenhuma nota disponível para exportação.
-                        </div>
-                    }
-
-                    <div class="campo-grid">
-                        <div class="campo">
-                            <label for="regime">Regime</label>
-                            <p-select
-                                inputId="regime"
-                                [options]="opcoesRegime"
-                                optionLabel="label"
-                                optionValue="value"
-                                [(ngModel)]="regime"
-                                [showClear]="false"
-                            />
-                        </div>
-
-                        <div class="campo">
-                            <label for="retencao">Retenção</label>
-                            <p-select
-                                inputId="retencao"
-                                [options]="opcoesRetencao"
-                                optionLabel="label"
-                                optionValue="value"
-                                [(ngModel)]="retencao"
-                                [showClear]="false"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="campo-check">
-                        <p-checkbox
-                            [(ngModel)]="homologacao"
-                            [binary]="true"
-                            inputId="homologacao"
-                            label="Homologação (somente validação)"
-                        />
-                    </div>
-
-                    @if (erro()) {
-                        <div class="aviso aviso-falha">
-                            <i class="pi pi-exclamation-triangle"></i>
-                            {{ erro() }}
-                        </div>
-                    }
-
-                    @if (mensagem()) {
-                        <div class="aviso aviso-sucesso">
-                            <i class="pi pi-check-circle"></i>
-                            {{ mensagem() }}
-                        </div>
-                    }
-
-                    <div class="acoes">
-                        <p-button
-                            label="Exportar TXT"
-                            icon="pi pi-download"
-                            [loading]="exportando()"
-                            [disabled]="exportando() || !notaId || notaId < 1 || notasDisponiveis().length === 0"
-                            (onClick)="exportar()"
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
-    styles: [
-        `
-            .exportacao-wrapper {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-                padding: 0.5rem 0;
-            }
-
-            .exportacao-card {
-                background: var(--surface-card);
-                border: 1px solid var(--surface-border);
-                border-radius: 1rem;
-                border-top: 3px solid var(--app-accent);
-                box-shadow: 0 12px 32px -16px color-mix(in srgb, var(--app-accent) 45%, transparent);
-                overflow: hidden;
-            }
-
-            .exportacao-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 1.25rem 1.5rem;
-                border-bottom: 1px solid var(--surface-border);
-                background: linear-gradient(135deg, var(--app-accent-soft), transparent 65%);
-            }
-
-            .exportacao-header h2 {
-                margin: 0;
-                font-size: 1.25rem;
-                font-weight: 700;
-                color: var(--text-color);
-            }
-
-            .exportacao-header p {
-                margin: 0.35rem 0 0;
-                color: var(--text-color-secondary);
-            }
-
-            .link-historico {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.4rem;
-                font-size: 0.875rem;
-                font-weight: 600;
-                color: var(--primary-color);
-                text-decoration: none;
-            }
-
-            .exportacao-body {
-                display: flex;
-                flex-direction: column;
-                gap: 1.25rem;
-                padding: 1.5rem;
-            }
-
-            .campo-grid {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 1rem;
-            }
-
-            .campo {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .campo label {
-                font-size: 0.75rem;
-                color: var(--text-color-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                font-weight: 600;
-            }
-
-            .campo-check {
-                display: flex;
-                align-items: center;
-                min-height: 2.5rem;
-            }
-
-            .select-loading {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                min-height: 42px;
-                color: var(--text-color-secondary);
-            }
-
-            .acoes {
-                display: flex;
-                justify-content: flex-start;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-
-            .aviso {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.75rem 1rem;
-                border-radius: 0.75rem;
-            }
-
-            .aviso-falha {
-                background: var(--app-falha-bg);
-                color: var(--app-falha);
-            }
-
-            .aviso-sucesso {
-                background: var(--app-sucesso-bg);
-                color: var(--app-sucesso);
-            }
-
-            @media (max-width: 640px) {
-                .exportacao-header {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 0.75rem;
-                }
-
-                .exportacao-body {
-                    padding: 1rem;
-                }
-
-                .campo-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-        `
-    ]
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, SelectModule, CheckboxModule, TableModule, InputTextModule, IconFieldModule, InputIconModule],
+    templateUrl: './exportacao-nota.component.html',
+    styleUrls: ['./exportacao-nota.component.scss']
 })
 export class ExportacaoNotaComponent implements OnInit {
     private apiService = inject(ApiService);
 
-    notaId: number | null = null;
+    readonly limiteLote = LIMITE_LOTE;
+    readonly formatarCpfCnpj = formatarCpfCnpj;
+
     regime: 'S' | 'V' | 'M' | 'L' = 'V';
     retencao: 'N' | 'S' | 'F' | 'D' | 'I' = 'N';
     homologacao = false;
+
     readonly exportando = signal(false);
     readonly carregandoNotas = signal(false);
     readonly erro = signal('');
     readonly mensagem = signal('');
-    readonly notasDisponiveis = signal<INotaExportavel[]>([]);
+    readonly errosLote = signal<IErroNotaLote[]>([]);
+
+    readonly notas = signal<INotaExportavel[]>([]);
+    readonly selecionadas = signal<INotaExportavel[]>([]);
+    readonly busca = signal('');
+    readonly competenciaFiltro = signal<string | null>(null);
 
     readonly opcoesRegime = [
         { label: 'Variável (V)', value: 'V' },
@@ -305,71 +106,148 @@ export class ExportacaoNotaComponent implements OnInit {
         { label: 'Sem incidência (I)', value: 'I' }
     ];
 
+    readonly opcoesCompetencia = computed(() => {
+        const unicas = [...new Set(this.notas().map((n) => n.competencia))];
+        // MMAAAA → ordena por AAAAMM, mais recente primeiro
+        unicas.sort((a, b) => (b.slice(2) + b.slice(0, 2)).localeCompare(a.slice(2) + a.slice(0, 2)));
+        return unicas.map((c) => ({ label: `${c.slice(0, 2)}/${c.slice(2)}`, value: c }));
+    });
+
+    readonly notasFiltradas = computed(() => {
+        const termo = this.busca().trim().toLowerCase();
+        const competencia = this.competenciaFiltro();
+        return this.notas().filter((n) => (!competencia || n.competencia === competencia) && (!termo || n.busca.includes(termo)));
+    });
+
+    readonly idsComErro = computed(() => new Map(this.errosLote().map((e) => [e.id, e.mensagem])));
+
+    readonly resumo = computed(() => {
+        const notas = this.selecionadas();
+        const grupos = new Set(notas.map((n) => n.prestador_cnpj + n.competencia));
+        return {
+            notas: notas.length,
+            arquivos: grupos.size,
+            valorIss: notas.reduce((total, n) => total + Number(n.valor_iss || 0), 0),
+            valorServico: notas.reduce((total, n) => total + Number(n.valor_servico || 0), 0)
+        };
+    });
+
+    readonly idsSelecionados = computed(() => new Set(this.selecionadas().map((n) => n.id)));
+
+    /** Atalhos por competência: quantas notas há e quantas já estão marcadas. */
+    readonly atalhosCompetencia = computed(() => {
+        const selecionados = this.idsSelecionados();
+        return this.opcoesCompetencia().map((opcao) => {
+            const daCompetencia = this.notas().filter((n) => n.competencia === opcao.value);
+            const marcadas = daCompetencia.filter((n) => selecionados.has(n.id)).length;
+            return { ...opcao, total: daCompetencia.length, marcadas, completa: marcadas === daCompetencia.length };
+        });
+    });
+
+    /** Prévia dos TXT que a API vai gerar (um por prestador + competência). */
+    readonly arquivosPrevistos = computed(() => {
+        const grupos = new Map<string, { arquivo: string; prestador: string; cnpj: string; competencia: string; notas: number; valorIss: number }>();
+        for (const nota of this.selecionadas()) {
+            const chave = nota.prestador_cnpj + nota.competencia;
+            const grupo = grupos.get(chave) ?? {
+                arquivo: `${nota.prestador_cnpj}${nota.competencia}.TXT`,
+                prestador: nota.prestador_razao_social || 'Sem razão social',
+                cnpj: nota.prestador_cnpj,
+                competencia: `${nota.competencia.slice(0, 2)}/${nota.competencia.slice(2)}`,
+                notas: 0,
+                valorIss: 0
+            };
+            grupo.notas++;
+            grupo.valorIss += Number(nota.valor_iss || 0);
+            grupos.set(chave, grupo);
+        }
+        return [...grupos.values()].sort((a, b) => a.arquivo.localeCompare(b.arquivo));
+    });
+
+    alternarCompetencia(competencia: string, completa: boolean): void {
+        const daCompetencia = this.notas().filter((n) => n.competencia === competencia);
+        if (completa) {
+            const remover = new Set(daCompetencia.map((n) => n.id));
+            this.selecionadas.set(this.selecionadas().filter((n) => !remover.has(n.id)));
+            return;
+        }
+        const atuais = new Map(this.selecionadas().map((n) => [n.id, n]));
+        daCompetencia.forEach((n) => atuais.set(n.id, n));
+        this.selecionadas.set([...atuais.values()]);
+    }
+
+    selecionarTodas(): void {
+        this.selecionadas.set([...this.notas()]);
+    }
+
+    readonly todasFiltradasSelecionadas = computed(() => {
+        const filtradas = this.notasFiltradas();
+        if (!filtradas.length) return false;
+        const ids = new Set(this.selecionadas().map((n) => n.id));
+        return filtradas.every((n) => ids.has(n.id));
+    });
+
     ngOnInit(): void {
         this.carregarNotasDisponiveis();
     }
 
-    private carregarNotasDisponiveis(): void {
+    carregarNotasDisponiveis(): void {
         this.carregandoNotas.set(true);
         this.erro.set('');
 
-        this.apiService.getHistorico<{ sucesso: boolean; dados?: { importacoes?: Array<{ id: number }> } }>({
-            pagina: 1,
-            por_pagina: 100
-        }).subscribe({
+        this.apiService.getHistorico<{ sucesso: boolean; dados?: { importacoes?: Array<{ id: number }> } }>({ pagina: 1, por_pagina: 100 }).subscribe({
             next: (resposta) => {
-                const importacoes = resposta?.dados?.importacoes ?? [];
-                const ids = importacoes.map((item) => item.id);
+                const ids = (resposta?.dados?.importacoes ?? []).map((item) => item.id);
 
                 if (!ids.length) {
-                    this.notasDisponiveis.set([]);
-                    this.carregandoNotas.set(false);
+                    this.definirNotas([]);
                     return;
                 }
 
-                forkJoin(
-                    ids.map((idImportacao) => this.apiService.getHistorico<IDetalheImportacaoResponse>({
-                        id: idImportacao
-                    }))
-                ).subscribe({
-                    next: (detalhes) => {
-                        const notas = detalhes
-                            .flatMap((detalhe) => detalhe?.dados?.notas ?? [])
-                            .map((nota) => ({
-                                id: nota.id,
-                                label: `#${nota.id} • Nº ${nota.numero} • ${nota.serie || 'S/'} • ${this.formatarData(nota.data_emissao)}`,
-                                numero: nota.numero,
-                                serie: nota.serie,
-                                data_emissao: nota.data_emissao,
-                                valor_iss: nota.valor_iss,
-                                status: nota.status
-                            }))
-                            .sort((a, b) => b.id - a.id);
-
-                        this.notasDisponiveis.set(notas);
-                        this.notaId = notas.length > 0 ? notas[0].id : null;
-                        this.carregandoNotas.set(false);
-                    },
-                    error: async (erro: HttpErrorResponse) => {
-                        this.erro.set(await this.lerMensagemErro(erro));
-                        this.notasDisponiveis.set([]);
-                        this.carregandoNotas.set(false);
-                    }
+                forkJoin(ids.map((id) => this.apiService.getHistorico<IDetalheImportacaoResponse>({ id }))).subscribe({
+                    next: (detalhes) => this.definirNotas(detalhes.flatMap((d) => d?.dados?.notas ?? [])),
+                    error: (erro: HttpErrorResponse) => this.falhaAoCarregar(erro)
                 });
             },
-            error: async (erro: HttpErrorResponse) => {
-                this.erro.set(await this.lerMensagemErro(erro));
-                this.notasDisponiveis.set([]);
-                this.carregandoNotas.set(false);
-            }
+            error: (erro: HttpErrorResponse) => this.falhaAoCarregar(erro)
         });
     }
 
-    exportar(): void {
-        const id = Number(this.notaId);
+    selecionarFiltradas(): void {
+        const atuais = new Map(this.selecionadas().map((n) => [n.id, n]));
+        for (const nota of this.notasFiltradas()) {
+            atuais.set(nota.id, nota);
+        }
+        this.selecionadas.set([...atuais.values()]);
+    }
 
-        if (!Number.isFinite(id) || id <= 0) {
-            this.erro.set('Selecione uma nota válida para exportar.');
+    desmarcarFiltradas(): void {
+        const filtradas = new Set(this.notasFiltradas().map((n) => n.id));
+        this.selecionadas.set(this.selecionadas().filter((n) => !filtradas.has(n.id)));
+    }
+
+    limparSelecao(): void {
+        this.selecionadas.set([]);
+        this.errosLote.set([]);
+    }
+
+    removerComErro(): void {
+        const comErro = this.idsComErro();
+        this.selecionadas.set(this.selecionadas().filter((n) => !comErro.has(n.id)));
+        this.errosLote.set([]);
+        this.erro.set('');
+    }
+
+    exportar(): void {
+        const ids = this.selecionadas().map((n) => n.id);
+
+        if (!ids.length) {
+            this.erro.set('Selecione ao menos uma nota para exportar.');
+            this.mensagem.set('');
+            return;
+        }
+        if (ids.length > LIMITE_LOTE) {
+            this.erro.set(`Selecione no máximo ${LIMITE_LOTE} notas por lote.`);
             this.mensagem.set('');
             return;
         }
@@ -377,79 +255,125 @@ export class ExportacaoNotaComponent implements OnInit {
         this.exportando.set(true);
         this.erro.set('');
         this.mensagem.set('');
+        this.errosLote.set([]);
 
-        this.apiService.exportarNota(id, {
-            regime: this.regime,
-            retencao: this.retencao,
-            homologacao: this.homologacao
-        }).subscribe({
+        this.apiService.exportarNotasLote(ids, { regime: this.regime, retencao: this.retencao, homologacao: this.homologacao }).subscribe({
             next: (resposta) => {
-                const blob = resposta.body ?? new Blob([], { type: 'text/plain;charset=windows-1252' });
-                const nomeArquivo = this.extrairNomeArquivo(resposta.headers.get('Content-Disposition')) ?? `nota-${id}.TXT`;
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
+                const nomeArquivo = this.baixar(resposta, ids.length > 1 ? 'exportacao-iss.zip' : `nota-${ids[0]}.TXT`);
+                const notas = Number(resposta.headers.get('X-Notas-Exportadas') ?? ids.length);
+                const arquivos = Number(resposta.headers.get('X-Arquivos-Gerados') ?? 1);
 
-                link.href = url;
-                link.download = nomeArquivo;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                URL.revokeObjectURL(url);
-
-                this.mensagem.set(`Arquivo ${nomeArquivo} exportado com sucesso.`);
+                this.mensagem.set(
+                    arquivos > 1
+                        ? `${notas} notas exportadas em ${arquivos} arquivos TXT (compactados em ${nomeArquivo}).`
+                        : `${notas === 1 ? '1 nota exportada' : `${notas} notas exportadas`} em ${nomeArquivo}.`
+                );
                 this.exportando.set(false);
             },
             error: async (erro: HttpErrorResponse) => {
-                const mensagem = await this.lerMensagemErro(erro);
-                this.erro.set(mensagem || 'Não foi possível exportar a nota.');
+                const corpo = await this.lerCorpoErro(erro);
+                this.errosLote.set(Array.isArray(corpo?.['erros']) ? (corpo['erros'] as IErroNotaLote[]) : []);
+                this.erro.set(this.mensagemErro(erro, corpo) || 'Não foi possível exportar as notas.');
                 this.exportando.set(false);
             }
         });
     }
 
-    private formatarData(data: string): string {
-        if (!data) {
-            return 'Sem data';
-        }
-
-        const valor = new Date(data);
-        if (Number.isNaN(valor.getTime())) {
-            return data;
-        }
-
-        return valor.toLocaleDateString('pt-BR');
+    rotuloStatus(status: string): string {
+        return status ? status.charAt(0) + status.slice(1).toLowerCase() : '-';
     }
 
-    private async lerMensagemErro(erro: HttpErrorResponse): Promise<string> {
-        if (erro.error instanceof Blob) {
+    private definirNotas(lista: INotaDetalheResponse[]): void {
+        // Uma nota pode aparecer em mais de um detalhe; o id é único.
+        const porId = new Map<number, INotaExportavel>();
+        for (const item of lista) {
+            const nota = {
+                id: item.id,
+                numero: String(item.numero ?? ''),
+                serie: item.serie ?? '',
+                data_emissao: item.data_emissao ?? '',
+                prestador_cnpj: item.prestador?.cnpj ?? '',
+                prestador_razao_social: item.prestador?.razao_social ?? null,
+                tomador_documento: item.tomador?.cpf_cnpj ?? null,
+                tomador_razao_social: item.tomador?.razao_social ?? null,
+                codigo_lc116: item.servico?.codigo_lc116 ?? '',
+                valor_servico: Number(item.valor_servico ?? 0),
+                valor_iss: Number(item.valor_iss ?? 0),
+                status: item.status ?? ''
+            };
+            porId.set(nota.id, {
+                ...nota,
+                competencia: this.competencia(nota.data_emissao),
+                busca: [nota.numero, nota.serie, nota.prestador_razao_social, nota.prestador_cnpj, nota.tomador_razao_social, nota.tomador_documento, nota.codigo_lc116, item.servico?.descricao]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase()
+            });
+        }
+
+        this.notas.set([...porId.values()].sort((a, b) => b.data_emissao.localeCompare(a.data_emissao) || b.id - a.id));
+        // Mantém a seleção apenas das notas que ainda existem
+        this.selecionadas.set(this.selecionadas().filter((n) => porId.has(n.id)).map((n) => porId.get(n.id)!));
+        this.carregandoNotas.set(false);
+    }
+
+    private async falhaAoCarregar(erro: HttpErrorResponse): Promise<void> {
+        this.erro.set(this.mensagemErro(erro, await this.lerCorpoErro(erro)) || 'Não foi possível carregar as notas.');
+        this.notas.set([]);
+        this.carregandoNotas.set(false);
+    }
+
+    private competencia(data: string): string {
+        const [ano, mes] = (data ?? '').split('-');
+        return mes && ano ? `${mes}${ano}` : '';
+    }
+
+    private baixar(resposta: HttpResponse<Blob>, nomePadrao: string): string {
+        const blob = resposta.body ?? new Blob([]);
+        const nomeArquivo = this.extrairNomeArquivo(resposta.headers.get('Content-Disposition')) ?? nomePadrao;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = nomeArquivo;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        return nomeArquivo;
+    }
+
+    /** Corpo JSON do erro; com responseType 'blob' ele chega como Blob. */
+    private async lerCorpoErro(erro: HttpErrorResponse): Promise<Record<string, unknown> | null> {
+        let corpo: unknown = erro.error;
+
+        if (corpo instanceof Blob) {
             try {
-                const texto = await erro.error.text();
-                const json = JSON.parse(texto) as Record<string, unknown>;
-                const mensagem = json['mensagem'];
-                if (typeof mensagem === 'string' && mensagem.trim()) {
-                    return mensagem.trim();
-                }
+                corpo = JSON.parse(await corpo.text());
             } catch {
-                // Ignora e tenta a leitura em texto bruto abaixo.
+                return null;
+            }
+        } else if (typeof corpo === 'string') {
+            try {
+                corpo = JSON.parse(corpo);
+            } catch {
+                return { mensagem: corpo };
             }
         }
 
-        if (typeof erro.error === 'string' && erro.error.trim()) {
-            return erro.error.trim();
-        }
+        return corpo && typeof corpo === 'object' ? (corpo as Record<string, unknown>) : null;
+    }
 
-        if (erro.error && typeof erro.error === 'object') {
-            const mensagem = (erro.error as Record<string, unknown>)['mensagem'];
-            if (typeof mensagem === 'string' && mensagem.trim()) {
-                return mensagem.trim();
-            }
+    private mensagemErro(erro: HttpErrorResponse, corpo: Record<string, unknown> | null): string {
+        const mensagem = corpo?.['mensagem'];
+        if (typeof mensagem === 'string' && mensagem.trim()) {
+            return mensagem.trim();
         }
-
         if (erro.status === 0) {
             return 'Não foi possível conectar ao servidor.';
         }
-
-        return erro.message || 'Erro ao exportar a nota.';
+        return erro.message || '';
     }
 
     private extrairNomeArquivo(contentDisposition: string | null): string | null {
@@ -463,10 +387,6 @@ export class ExportacaoNotaComponent implements OnInit {
         }
 
         const filenameMatch = /filename="?([^";]+)"?/i.exec(contentDisposition);
-        if (filenameMatch) {
-            return filenameMatch[1].trim();
-        }
-
-        return null;
+        return filenameMatch ? filenameMatch[1].trim() : null;
     }
 }

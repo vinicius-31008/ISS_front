@@ -1,0 +1,315 @@
+<div class="exportacao-wrapper">
+    <!-- Cabeçalho -->
+    <div class="exportacao-header">
+        <div class="titulo-grupo">
+            <span class="badge">
+                <i class="pi pi-clone"></i>
+                Novo · Exportação em lote
+            </span>
+            <h2>Exportar notas para o ISS</h2>
+            <p>Marque <strong>quantas notas quiser</strong> e baixe tudo de uma vez. Cada prestador e competência gera um TXT do SIGISSWEB; se houver mais de um, eles vêm juntos em um <strong>ZIP</strong>.</p>
+        </div>
+        <a routerLink="/historico" class="link-historico">
+            <i class="pi pi-history"></i>
+            Ver histórico
+        </a>
+    </div>
+
+    <!-- Etapas -->
+    <ol class="etapas">
+        <li class="etapa" [class.concluida]="resumo().notas > 0" [class.atual]="resumo().notas === 0">
+            <span class="etapa-numero">
+                @if (resumo().notas > 0) {
+                    <i class="pi pi-check"></i>
+                } @else {
+                    1
+                }
+            </span>
+            <div>
+                <strong>Selecione as notas</strong>
+                <small>{{ resumo().notas > 0 ? resumo().notas + ' marcada(s)' : 'Clique nas linhas ou use os atalhos' }}</small>
+            </div>
+        </li>
+        <li class="etapa" [class.atual]="resumo().notas > 0">
+            <span class="etapa-numero">2</span>
+            <div>
+                <strong>Confira os parâmetros</strong>
+                <small>Regime, retenção e homologação</small>
+            </div>
+        </li>
+        <li class="etapa" [class.atual]="resumo().notas > 0">
+            <span class="etapa-numero">3</span>
+            <div>
+                <strong>Exporte</strong>
+                <small>{{ resumo().arquivos > 1 ? resumo().arquivos + ' TXT em um ZIP' : resumo().arquivos === 1 ? '1 arquivo TXT' : 'TXT ou ZIP' }}</small>
+            </div>
+        </li>
+    </ol>
+
+    <!-- Etapa 1: seleção -->
+    <section class="painel">
+        <div class="painel-titulo">
+            <h3><span class="painel-icone">1</span>Selecione as notas</h3>
+            <div class="painel-titulo-acoes">
+                <span class="contador" [class.ativo]="resumo().notas > 0">
+                    <i class="pi pi-check-square"></i>
+                    {{ resumo().notas }} de {{ notas().length }} selecionadas
+                </span>
+                <p-button icon="pi pi-refresh" severity="secondary" [text]="true" [rounded]="true" ariaLabel="Recarregar notas" [loading]="carregandoNotas()" (onClick)="carregarNotasDisponiveis()" />
+            </div>
+        </div>
+
+        @if (atalhosCompetencia().length) {
+            <div class="atalhos">
+                <span class="atalhos-label"><i class="pi pi-bolt"></i> Seleção rápida</span>
+                <button type="button" class="chip" [class.chip-ativo]="resumo().notas === notas().length && notas().length > 0" (click)="resumo().notas === notas().length ? limparSelecao() : selecionarTodas()">
+                    <i class="pi" [ngClass]="resumo().notas === notas().length && notas().length > 0 ? 'pi-check-circle' : 'pi-circle'"></i>
+                    Todas
+                    <span class="chip-qtd">{{ notas().length }}</span>
+                </button>
+                @for (atalho of atalhosCompetencia(); track atalho.value) {
+                    <button type="button" class="chip" [class.chip-ativo]="atalho.completa" [class.chip-parcial]="atalho.marcadas > 0 && !atalho.completa" (click)="alternarCompetencia(atalho.value, atalho.completa)">
+                        <i class="pi" [ngClass]="atalho.completa ? 'pi-check-circle' : atalho.marcadas > 0 ? 'pi-minus-circle' : 'pi-circle'"></i>
+                        Competência {{ atalho.label }}
+                        <span class="chip-qtd">{{ atalho.marcadas > 0 && !atalho.completa ? atalho.marcadas + '/' : '' }}{{ atalho.total }}</span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="filtros">
+            <p-iconfield class="busca">
+                <p-inputicon class="pi pi-search" />
+                <input pInputText type="text" placeholder="Buscar por número, prestador, tomador ou serviço" [ngModel]="busca()" (ngModelChange)="busca.set($event)" />
+            </p-iconfield>
+            <p-select
+                class="filtro-competencia"
+                [options]="opcoesCompetencia()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Filtrar competência"
+                [showClear]="true"
+                [ngModel]="competenciaFiltro()"
+                (ngModelChange)="competenciaFiltro.set($event)"
+            />
+            <div class="filtros-acoes">
+                @if (todasFiltradasSelecionadas()) {
+                    <p-button label="Desmarcar exibidas" icon="pi pi-minus-circle" severity="secondary" [outlined]="true" size="small" (onClick)="desmarcarFiltradas()" />
+                } @else {
+                    <p-button
+                        [label]="'Marcar exibidas (' + notasFiltradas().length + ')'"
+                        icon="pi pi-check-square"
+                        severity="secondary"
+                        [outlined]="true"
+                        size="small"
+                        [disabled]="!notasFiltradas().length"
+                        (onClick)="selecionarFiltradas()"
+                    />
+                }
+                <p-button label="Limpar" icon="pi pi-times" severity="secondary" [text]="true" size="small" [disabled]="!selecionadas().length" (onClick)="limparSelecao()" />
+            </div>
+        </div>
+
+        <div class="tabela-wrapper">
+            <p-table
+                [value]="notasFiltradas()"
+                [selection]="selecionadas()"
+                (selectionChange)="selecionadas.set($event)"
+                selectionMode="multiple"
+                [metaKeySelection]="false"
+                dataKey="id"
+                [loading]="carregandoNotas()"
+                [paginator]="notasFiltradas().length > 10"
+                [rows]="10"
+                [rowsPerPageOptions]="[10, 25, 50, 100]"
+                [tableStyle]="{ 'min-width': '52rem' }"
+            >
+                <ng-template #header>
+                    <tr>
+                        <th class="col-check"><p-tableHeaderCheckbox /></th>
+                        <th>Nota</th>
+                        <th>Emissão</th>
+                        <th>Prestador</th>
+                        <th>Tomador</th>
+                        <th class="num">Serviço</th>
+                        <th class="num">ISS</th>
+                        <th>Status</th>
+                    </tr>
+                </ng-template>
+                <ng-template #body let-nota>
+                    <tr [pSelectableRow]="nota" class="linha" [class.linha-selecionada]="idsSelecionados().has(nota.id)" [class.linha-erro]="idsComErro().has(nota.id)">
+                        <td class="col-check" (click)="$event.stopPropagation()"><p-tableCheckbox [value]="nota" /></td>
+                        <td>
+                            <span class="principal">Nº {{ nota.numero }}</span>
+                            <span class="secundario">Série {{ nota.serie || '-' }} · #{{ nota.id }}</span>
+                            @if (idsComErro().get(nota.id); as motivo) {
+                                <span class="motivo-erro"><i class="pi pi-exclamation-circle"></i>{{ motivo }}</span>
+                            }
+                        </td>
+                        <td class="nowrap">{{ nota.data_emissao | date: 'dd/MM/yyyy' }}</td>
+                        <td>
+                            <span class="principal">{{ nota.prestador_razao_social || 'Sem razão social' }}</span>
+                            <span class="secundario">{{ formatarCpfCnpj(nota.prestador_cnpj) }}</span>
+                        </td>
+                        <td>
+                            @if (nota.tomador_documento) {
+                                <span class="principal">{{ nota.tomador_razao_social || 'Sem razão social' }}</span>
+                                <span class="secundario">{{ formatarCpfCnpj(nota.tomador_documento) }}</span>
+                            } @else {
+                                <span class="sem-tomador"><i class="pi pi-exclamation-triangle"></i> Sem tomador</span>
+                            }
+                        </td>
+                        <td class="num">{{ nota.valor_servico | currency: 'BRL' }}</td>
+                        <td class="num destaque">{{ nota.valor_iss | currency: 'BRL' }}</td>
+                        <td>
+                            <span class="status-pill" [class.status-cancelada]="nota.status === 'CANCELADA'">{{ rotuloStatus(nota.status) }}</span>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                    <tr>
+                        <td colspan="8" class="vazio">
+                            <i class="pi pi-inbox"></i>
+                            {{ notas().length ? 'Nenhuma nota corresponde aos filtros.' : 'Nenhuma nota disponível para exportação.' }}
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </section>
+
+    <!-- Prévia dos arquivos -->
+    <section class="painel painel-previa" [class.vazia]="!arquivosPrevistos().length">
+        <div class="painel-titulo">
+            <h3>
+                <span class="painel-icone"><i class="pi" [ngClass]="arquivosPrevistos().length > 1 ? 'pi-box' : 'pi-file'"></i></span>
+                Arquivos que serão gerados
+            </h3>
+            @if (arquivosPrevistos().length > 1) {
+                <span class="tag-zip"><i class="pi pi-box"></i> {{ arquivosPrevistos().length }} TXT compactados em 1 ZIP</span>
+            } @else if (arquivosPrevistos().length === 1) {
+                <span class="tag-txt"><i class="pi pi-file"></i> 1 arquivo TXT</span>
+            }
+        </div>
+
+        @if (arquivosPrevistos().length) {
+            <div class="previa-grade">
+                @for (arquivo of arquivosPrevistos(); track arquivo.arquivo) {
+                    <div class="arquivo-card">
+                        <span class="arquivo-icone"><i class="pi pi-file-edit"></i></span>
+                        <div class="arquivo-info">
+                            <span class="arquivo-nome">{{ arquivo.arquivo }}</span>
+                            <span class="secundario">{{ arquivo.prestador }} · competência {{ arquivo.competencia }}</span>
+                        </div>
+                        <div class="arquivo-numeros">
+                            <span class="principal">{{ arquivo.notas }} {{ arquivo.notas === 1 ? 'nota' : 'notas' }}</span>
+                            <span class="secundario">{{ arquivo.valorIss | currency: 'BRL' }}</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        } @else {
+            <p class="previa-vazia">
+                <i class="pi pi-arrow-up"></i>
+                Marque notas na tabela acima para ver aqui os arquivos que serão exportados.
+            </p>
+        }
+    </section>
+
+    <!-- Etapa 2: parâmetros -->
+    <section class="painel">
+        <div class="painel-titulo">
+            <h3><span class="painel-icone">2</span>Confira os parâmetros</h3>
+            <span class="secundario">Valem para todas as notas do lote</span>
+        </div>
+        <div class="parametros">
+            <div class="campo">
+                <label for="regime">Regime</label>
+                <p-select inputId="regime" [options]="opcoesRegime" optionLabel="label" optionValue="value" [(ngModel)]="regime" />
+            </div>
+            <div class="campo">
+                <label for="retencao">Retenção</label>
+                <p-select inputId="retencao" [options]="opcoesRetencao" optionLabel="label" optionValue="value" [(ngModel)]="retencao" />
+            </div>
+            <div class="campo campo-check">
+                <p-checkbox [(ngModel)]="homologacao" [binary]="true" inputId="homologacao" />
+                <label for="homologacao" class="label-check">
+                    Homologação
+                    <small>Gera o registro 0 com "X": o SIGISSWEB só valida o arquivo.</small>
+                </label>
+            </div>
+        </div>
+    </section>
+
+    @if (erro()) {
+        <div class="aviso aviso-falha">
+            <div class="aviso-topo">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ erro() }}</span>
+                @if (errosLote().length) {
+                    <p-button label="Remover essas notas da seleção" icon="pi pi-filter-slash" severity="danger" size="small" (onClick)="removerComErro()" />
+                }
+            </div>
+            @if (errosLote().length) {
+                <ul class="lista-erros">
+                    @for (item of errosLote(); track item.id) {
+                        <li>
+                            <strong>{{ item.numero ? 'Nº ' + item.numero : 'Nota #' + item.id }}</strong>
+                            {{ item.mensagem }}
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    @if (mensagem()) {
+        <div class="aviso aviso-sucesso">
+            <div class="aviso-topo">
+                <i class="pi pi-check-circle"></i>
+                <span>{{ mensagem() }}</span>
+            </div>
+        </div>
+    }
+
+    <!-- Etapa 3: barra de exportação -->
+    <div class="barra-acao" [class.ativa]="resumo().notas > 0">
+        @if (resumo().notas > 0) {
+            <div class="barra-selecao">
+                <span class="barra-badge">{{ resumo().notas }}</span>
+                <div class="barra-texto">
+                    <strong>{{ resumo().notas === 1 ? '1 nota selecionada' : resumo().notas + ' notas selecionadas' }}</strong>
+                    <span>
+                        {{ resumo().arquivos > 1 ? resumo().arquivos + ' arquivos TXT em um ZIP' : '1 arquivo TXT' }}
+                        · Serviços {{ resumo().valorServico | currency: 'BRL' }}
+                        · ISS <strong>{{ resumo().valorIss | currency: 'BRL' }}</strong>
+                    </span>
+                </div>
+            </div>
+        } @else {
+            <div class="barra-selecao barra-vazia">
+                <span class="barra-badge"><i class="pi pi-hand-pointer"></i></span>
+                <div class="barra-texto">
+                    <strong>Nenhuma nota selecionada</strong>
+                    <span>Marque uma ou mais notas para exportar em lote.</span>
+                </div>
+            </div>
+        }
+        <div class="barra-acao-botoes">
+            @if (resumo().notas > limiteLote) {
+                <span class="limite">Máximo de {{ limiteLote }} notas por lote</span>
+            }
+            @if (resumo().notas > 0) {
+                <p-button label="Limpar" severity="secondary" [text]="true" (onClick)="limparSelecao()" />
+            }
+            <p-button
+                [label]="resumo().notas === 0 ? 'Exportar' : resumo().arquivos > 1 ? 'Exportar ' + resumo().notas + ' notas (ZIP)' : resumo().notas > 1 ? 'Exportar ' + resumo().notas + ' notas (TXT)' : 'Exportar nota (TXT)'"
+                [icon]="resumo().arquivos > 1 ? 'pi pi-box' : 'pi pi-download'"
+                size="large"
+                [loading]="exportando()"
+                [disabled]="exportando() || resumo().notas === 0 || resumo().notas > limiteLote"
+                (onClick)="exportar()"
+            />
+        </div>
+    </div>
+</div>

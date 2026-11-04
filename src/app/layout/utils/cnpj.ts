@@ -1,9 +1,9 @@
-export function somenteDigitos(valor: string): string {
-    return valor.replace(/\D/g, '');
+export function somenteDigitos(valor: string | null | undefined): string {
+    return (valor ?? '').replace(/\D/g, '');
 }
 
 /** 12345678000190 -> 12.345.678/0001-90. Aplica a máscara parcialmente enquanto se digita. */
-export function formatarCnpj(valor: string): string {
+export function formatarCnpj(valor: string | null | undefined): string {
     const d = somenteDigitos(valor).slice(0, 14);
 
     if (d.length <= 2) return d;
@@ -14,7 +14,7 @@ export function formatarCnpj(valor: string): string {
 }
 
 /** Documento completo: 11 dígitos vira CPF (123.456.789-01), o resto segue a máscara de CNPJ. */
-export function formatarCpfCnpj(valor: string): string {
+export function formatarCpfCnpj(valor: string | null | undefined): string {
     const d = somenteDigitos(valor);
 
     if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;

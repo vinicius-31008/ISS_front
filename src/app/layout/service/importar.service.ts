@@ -88,4 +88,21 @@ export class ApiService {
     }) as Observable<HttpResponse<Blob>>;
   }
 
+  /**
+   * Exporta várias notas de uma vez. A API agrupa por prestador + competência:
+   * um grupo → TXT; vários → ZIP com um TXT por grupo.
+   * Erro 422 traz `erros: [{ id, numero, mensagem }]` (no corpo Blob, como JSON).
+   */
+  exportarNotasLote(ids: number[], params: IExportacaoNotaParams = {}): Observable<HttpResponse<Blob>> {
+    return this.http.post(`${this.apiUrl}/api/exportar-iss-lote.php`, {
+      ids,
+      regime: params.regime ?? 'V',
+      retencao: params.retencao ?? 'N',
+      homologacao: params.homologacao ?? false
+    }, {
+      responseType: 'blob',
+      observe: 'response'
+    }) as Observable<HttpResponse<Blob>>;
+  }
+
 }

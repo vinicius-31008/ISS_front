@@ -27,8 +27,8 @@ export class AppMenu {
     ngOnInit() {
         this.model = [
             {
-                label: 'Home',
-                items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard'] }]
+                label: 'Início',
+                items: [{ label: 'Painel', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard'] }]
             },
             {
                 label: 'Notas Fiscais',
@@ -70,12 +70,12 @@ export class AppMenu {
                 label: 'Sobre',
                 items: [
                     {
-                        label: 'Documentation',
+                        label: 'Documentação',
                         icon: 'pi pi-fw pi-book',
                         routerLink: ['/documentation']
                     },
                     {
-                        label: 'View Source',
+                        label: 'Código-fonte',
                         icon: 'pi pi-fw pi-github',
                         url: 'https://github.com/vinicius-31008/ISS_front',
                         target: '_blank'

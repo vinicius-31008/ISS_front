@@ -3,6 +3,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subject, takeUntil } from 'rxjs';
 import { AppMenu } from './app.menu';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { AuthService } from '../service/auth.service';
 
 @Component({
     selector: 'app-sidebar',
@@ -10,12 +11,32 @@ import { LayoutService } from '@/app/layout/service/layout.service';
     imports: [AppMenu, RouterModule],
     template: `
         <div class="layout-sidebar">
-            <app-menu></app-menu>
+            <nav class="layout-sidebar-menu">
+                <app-menu></app-menu>
+            </nav>
+
+            @if (sessao(); as s) {
+                <div class="layout-sidebar-footer">
+                    <span class="sidebar-avatar">{{ iniciais() }}</span>
+                    <div class="sidebar-usuario">
+                        <span class="sidebar-usuario-nome">{{ s.usuario.nome }}</span>
+                        <span class="sidebar-usuario-empresa">{{ s.empresa.razao_social }}</span>
+                    </div>
+                    <span class="sidebar-perfil">{{ s.usuario.perfil === 'ADMIN' ? 'Admin' : 'Usuário' }}</span>
+                </div>
+            }
         </div>
     `
 })
 export class AppSidebar implements OnInit, OnDestroy {
     layoutService = inject(LayoutService);
+
+    private auth = inject(AuthService);
+    readonly sessao = this.auth.sessao;
+    readonly iniciais = computed(() => {
+        const partes = (this.sessao()?.usuario.nome ?? '').trim().split(/\s+/).filter(Boolean);
+        return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase() || '?';
+    });
 
     router = inject(Router);
 

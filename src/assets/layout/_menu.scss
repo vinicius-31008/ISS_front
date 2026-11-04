@@ -5,16 +5,93 @@
     width: 20rem;
     height: calc(100vh - 8rem);
     z-index: 999;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     user-select: none;
     top: 6rem;
     left: 2rem;
     transition:
         transform var(--layout-section-transition-duration),
         left var(--layout-section-transition-duration);
-    background-color: var(--surface-overlay);
-    border-radius: var(--content-border-radius);
-    padding: 0.5rem 1.5rem;
+    background:
+        radial-gradient(circle at 0% 0%, var(--app-accent-faint), transparent 40%),
+        var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 1.25rem;
+    box-shadow: 0 14px 36px -26px color-mix(in srgb, var(--app-accent) 55%, transparent);
+    padding: 0;
+}
+
+.layout-sidebar-menu {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem 0.9rem;
+    scrollbar-width: thin;
+}
+
+/* Cartão do usuário no rodapé do menu */
+.layout-sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0.9rem 0.9rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 0.9rem;
+    background: var(--app-accent-faint);
+
+    .sidebar-avatar {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 50%;
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--primary-contrast-color, #fff);
+        background: var(--primary-color);
+    }
+
+    .sidebar-usuario {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sidebar-usuario-nome,
+    .sidebar-usuario-empresa {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sidebar-usuario-nome {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .sidebar-usuario-empresa {
+        font-size: 0.75rem;
+        color: var(--text-color-secondary);
+    }
+
+    .sidebar-perfil {
+        flex-shrink: 0;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary-color);
+        background: var(--app-accent-soft);
+    }
 }
 
 .layout-menu {
@@ -24,15 +101,112 @@
 
     .layout-root-menuitem {
         > .layout-menuitem-root-text {
-            font-size: 0.857rem;
-            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0 0.75rem;
+            margin: 0.35rem 0 0.5rem;
+            font-size: 0.68rem;
             font-weight: 700;
-            color: var(--text-color);
-            margin: 0.75rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-color-secondary);
+
+            // Linha que completa o título da seção
+            &::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--surface-border);
+            }
         }
 
         > a {
             display: none;
+        }
+
+        & + .layout-root-menuitem {
+            margin-top: 1rem;
+        }
+    }
+
+    // Itens de primeiro nível: todos com a mesma altura, ícone em bloco e espaçamento
+    .layout-root-submenulist {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+
+        > li > a {
+            gap: 0.75rem;
+            min-height: 2.75rem;
+            padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+            border-radius: 0.8rem;
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-color);
+            transition:
+                background-color 0.15s ease,
+                color 0.15s ease,
+                box-shadow var(--element-transition-duration);
+
+            .layout-menuitem-icon {
+                flex-shrink: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 2rem;
+                height: 2rem;
+                margin-right: 0;
+                border-radius: 0.6rem;
+                font-size: 0.95rem;
+                color: var(--text-color-secondary);
+                background: var(--surface-ground);
+                border: 1px solid var(--surface-border);
+                transition: all 0.15s ease;
+            }
+
+            &:hover {
+                background-color: var(--app-accent-faint);
+
+                .layout-menuitem-icon {
+                    color: var(--primary-color);
+                    border-color: color-mix(in srgb, var(--app-accent) 35%, var(--surface-border));
+                }
+            }
+
+            &.active-route {
+                font-weight: 700;
+                color: var(--primary-color);
+                background: var(--app-accent-soft);
+
+                // Indicador à esquerda do item ativo
+                &::before {
+                    content: '';
+                    position: absolute;
+                    left: -0.9rem;
+                    top: 0.6rem;
+                    bottom: 0.6rem;
+                    width: 4px;
+                    border-radius: 0 4px 4px 0;
+                    background: var(--primary-color);
+                }
+
+                .layout-menuitem-icon {
+                    color: var(--primary-contrast-color, #fff);
+                    background: var(--primary-color);
+                    border-color: transparent;
+                    box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--app-accent) 80%, transparent);
+                }
+            }
+
+            // Link externo (ex.: código-fonte) ganha uma seta discreta
+            &[target='_blank']::after {
+                content: '\e93c';
+                font-family: 'primeicons';
+                margin-left: auto;
+                font-size: 0.7rem;
+                color: var(--text-color-secondary);
+            }
         }
     }
 
