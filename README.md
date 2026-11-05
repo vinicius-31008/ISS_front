@@ -28,9 +28,9 @@ Projeto acadêmico desenvolvido por alunos do **SENAI**
 
 ---
 
-## 🎓 Sobre o projeto
+## Sobre o projeto
 
-O **ISS Solution** é um projeto **institucional e educacional** desenvolvido por alunos do **SENAI** como parte da formação técnica <!-- ✏️ informe o curso, ex.: "do curso Técnico em Desenvolvimento de Sistemas" --> na unidade <!-- ✏️ informe a unidade, ex.: "SENAI Cidade/UF" -->.
+O **ISS Solution** é um projeto **institucional e educacional** desenvolvido por alunos do **SENAI** como parte da formação técnica <!--  informe o curso, ex.: "do curso Técnico em Desenvolvimento de Sistemas" --> na unidade <!--  informe a unidade, ex.: "SENAI Cidade/UF" -->.
 
 O objetivo foi resolver um problema real do dia a dia de escritórios contábeis e empresas prestadoras de serviço: **transformar planilhas e arquivos de notas fiscais em declarações de ISS prontas para envio à prefeitura**, sem digitação manual e com validação antes do envio.
 
@@ -40,7 +40,7 @@ Durante o desenvolvimento, a equipe praticou o ciclo completo de um software pro
 
 ---
 
-## 💡 Entendendo o problema
+## Entendendo o problema
 
 Se você não é da área fiscal, aqui vai o contexto em poucas linhas:
 
@@ -56,7 +56,7 @@ Se você não é da área fiscal, aqui vai o contexto em poucas linhas:
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 | | Funcionalidade | Descrição |
 |---|---|---|
@@ -70,7 +70,7 @@ Se você não é da área fiscal, aqui vai o contexto em poucas linhas:
 | 🌗 | **Tema claro/escuro** | Interface responsiva, com troca de tema e de cor principal. |
 
 <!--
-📸 Dica: adicione capturas de tela em docs/screenshots/ e descomente o bloco abaixo.
+ Dica: adicione capturas de tela em docs/screenshots/ e descomente o bloco abaixo.
 
 <div align="center">
   <img src="docs/screenshots/painel.png" alt="Painel" width="49%" />
@@ -80,21 +80,21 @@ Se você não é da área fiscal, aqui vai o contexto em poucas linhas:
 
 ---
 
-## 🔄 Como funciona
+## Como funciona
 
 O caminho de uma nota, do arquivo até a prefeitura:
 
 ```mermaid
 flowchart LR
-    A[📄 Arquivo TXT<br/>com as notas] -->|upload| B[📥 Importação]
+    A[ Arquivo TXT<br/>com as notas] -->|upload| B[ Importação]
     B --> C{Linha válida?}
-    C -->|não| D[⚠️ Erro registrado<br/>com nº da linha]
-    C -->|sim| E[🧮 Cálculo do ISS<br/>pela LC 116]
-    E --> F[(🗄️ Banco de dados)]
-    F --> G[📊 Painel e histórico]
-    F --> H[📤 Exportação<br/>em lote]
-    H --> I[📦 TXT / ZIP<br/>layout SIGISSWEB]
-    I -->|envio| J[🏛️ Prefeitura]
+    C -->|não| D[ Erro registrado<br/>com nº da linha]
+    C -->|sim| E[ Cálculo do ISS<br/>pela LC 116]
+    E --> F[( Banco de dados)]
+    F --> G[ Painel e histórico]
+    F --> H[ Exportação<br/>em lote]
+    H --> I[ TXT / ZIP<br/>layout SIGISSWEB]
+    I -->|envio| J[ Prefeitura]
 ```
 
 ### Arquitetura
@@ -104,11 +104,11 @@ O sistema é dividido em duas partes que conversam por HTTP/JSON:
 ```mermaid
 flowchart LR
     subgraph Navegador
-        FE[🖥️ ISS_front<br/>Angular + PrimeNG]
+        FE[ ISS_front<br/>Angular + PrimeNG]
     end
     subgraph Servidor
-        API[⚙️ ISS_back<br/>API REST em PHP]
-        DB[(🗄️ MySQL)]
+        API[ ISS_back<br/>API REST em PHP]
+        DB[( MySQL)]
     end
     FE -- "requisições HTTP<br/>Authorization: Bearer token" --> API
     API -- "respostas JSON,<br/>arquivos TXT/ZIP" --> FE
@@ -120,7 +120,7 @@ flowchart LR
 
 ---
 
-## 🛠️ Tecnologias
+##  Tecnologias
 
 | Camada | Tecnologia | Para que usamos |
 |---|---|---|
@@ -136,7 +136,7 @@ flowchart LR
 
 ---
 
-## 🚀 Como executar
+## Como executar
 
 ### Pré-requisitos
 
@@ -167,7 +167,7 @@ npm install
 npm start
 ```
 
-Acesse <http://localhost:4200> 🎉
+Acesse <http://localhost:4200> 
 
 > Se a API estiver em outro endereço, altere `API_URL` em [`src/app/layout/service/importar.service.ts`](src/app/layout/service/importar.service.ts).
 
@@ -182,13 +182,13 @@ Acesse <http://localhost:4200> 🎉
 
 ---
 
-## 📖 Guia de uso
+##  Guia de uso
 
-### 1️⃣ Entre no sistema
+###  Entre no sistema
 
 Faça login com o usuário criado no backend. No primeiro acesso com senha provisória, o sistema pede a troca de senha.
 
-### 2️⃣ Importe as notas
+###  Importe as notas
 
 No menu **Notas Fiscais → Importar**, envie um arquivo `.txt` com **uma nota por linha** e os campos separados por `;`:
 
@@ -209,14 +209,14 @@ numero;serie;data_emissao;cnpj_prestador;razao_social_prestador;documento_tomado
 
 Ao final, o sistema mostra quantas linhas foram processadas, o ISS calculado e **cada erro com o número da linha**, para você corrigir o arquivo.
 
-> 💡 O repositório do backend tem arquivos prontos para teste em `arquivos_teste/`.
+>  O repositório do backend tem arquivos prontos para teste em `arquivos_teste/`.
 
-### 3️⃣ Confira no painel e no histórico
+###  Confira no painel e no histórico
 
 - **Painel:** visão geral do período (6, 12 ou 24 meses) com indicadores e gráficos.
 - **Histórico:** todas as importações, com filtros e detalhes de notas e erros.
 
-### 4️⃣ Exporte para o SIGISSWEB
+###  Exporte para o SIGISSWEB
 
 Em **Notas Fiscais → Exportar**:
 
@@ -233,7 +233,7 @@ Se alguma nota não puder ir para o layout (sem tomador, série inválida, data 
 
 ---
 
-## 📁 Estrutura do projeto
+## Estrutura do projeto
 
 ```text
 src/
@@ -259,7 +259,7 @@ src/
 
 ---
 
-## 🧠 O que aprendemos
+## O que aprendemos
 
 Este projeto foi uma oportunidade de aplicar na prática conteúdos vistos em sala:
 
@@ -272,22 +272,22 @@ Este projeto foi uma oportunidade de aplicar na prática conteúdos vistos em sa
 
 ---
 
-## 👥 Equipe
+## Equipe
 
-Projeto desenvolvido por alunos do **SENAI** <!-- ✏️ unidade / turma / ano -->:
+Projeto desenvolvido por alunos do **SENAI** <!--  unidade / turma / ano -->:
 
-<!-- ✏️ Substitua pelos integrantes reais (nome e link do GitHub de cada um) -->
+<!--  Substitua pelos integrantes reais (nome e link do GitHub de cada um) -->
 | Integrante | GitHub |
 |---|---|
 | Vinícius | [@vinicius-31008](https://github.com/vinicius-31008) |
 | *Nome do integrante* | *@usuario* |
 | *Nome do integrante* | *@usuario* |
 
-**Orientação:** <!-- ✏️ nome do(a) professor(a)/instrutor(a) --> *Nome do(a) instrutor(a)*
+**Orientação:** <!--  nome do(a) professor(a)/instrutor(a) --> *Nome do(a) instrutor(a)*
 
 ---
 
-## ⚖️ Aviso
+##  Aviso
 
 Este é um **projeto acadêmico** com fins educacionais. Ele **não é um produto oficial** do SENAI nem da Prefeitura de Santa Bárbara d'Oeste, e não substitui a orientação de um profissional de contabilidade. Antes de enviar declarações reais, valide os arquivos em **modo homologação** no SIGISSWEB.
 
@@ -295,6 +295,6 @@ Este é um **projeto acadêmico** com fins educacionais. Ele **não é um produt
 
 <br />
 
-Feito com 💙 por alunos do **SENAI**
+Feito por alunos do **SENAI**
 
 </div>
